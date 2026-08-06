@@ -162,6 +162,41 @@ export function getReminderEffectiveDate(reminder) {
   return new Date(reminder.scheduledAt);
 }
 
+function getTreatmentFirstDoseDate(
+  treatment,
+) {
+  if (
+    treatment.frequencyMode === 'custom' ||
+    !treatment.startDate ||
+    !treatment.firstDoseTime
+  ) {
+    return null;
+  }
+
+  return createLocalDateTime(
+    treatment.startDate,
+    treatment.firstDoseTime,
+  );
+}
+
+function getTreatmentEndDate(
+  treatment,
+) {
+  if (!treatment.endDate) {
+    return null;
+  }
+
+  const endDate = new Date(
+    `${treatment.endDate}T23:59:59.999`,
+  );
+
+  return Number.isNaN(
+    endDate.getTime(),
+  )
+    ? null
+    : endDate;
+}
+
 function isDateInsideTreatment(
   date,
   treatment,
@@ -174,19 +209,262 @@ function isDateInsideTreatment(
     `${treatment.startDate}T00:00:00`,
   );
 
-  const endDate = treatment.endDate
-    ? new Date(`${treatment.endDate}T23:59:59`)
-    : null;
+  const endDate =
+    getTreatmentEndDate(
+      treatment,
+    );
 
   if (date < startDate) {
     return false;
   }
 
-  if (endDate && date > endDate) {
+  if (
+    endDate &&
+    date > endDate
+  ) {
     return false;
   }
 
   return true;
+}
+
+function createReminder({
+  treatment,
+  scheduledDate,
+  recordsMap,
+  childrenMap,
+  treatmentStatus,
+}) {
+  const dateKey =
+    getLocalDateKey(
+      scheduledDate,
+    );
+
+  const time = [
+    padNumber(
+      scheduledDate.getHours(),
+    ),
+    padNumber(
+      scheduledDate.getMinutes(),
+    ),
+  ].join(':');
+
+  const reminderId = [
+    treatment.id,
+    dateKey,
+    time.replace(':', ''),
+  ].join('-');
+
+  const savedRecord =
+    recordsMap[reminderId] ?? {};
+
+  return {
+    id: reminderId,
+    treatmentId: treatment.id,
+    childId: treatment.childId,
+    medicationName:
+      treatment.medicationName,
+    presentation:
+      treatment.presentation,
+    dosageInstruction:
+      treatment.dosageInstruction,
+    administrationRoute:
+      treatment.administrationRoute,
+    childName:
+      childrenMap[treatment.childId]
+        ?.fullName ??
+      'Perfil no disponible',
+    scheduledAt:
+      scheduledDate.toISOString(),
+    originalTime: time,
+    treatmentStatus,
+    status:
+      savedRecord.status ?? 'pending',
+    postponedUntil:
+      savedRecord.postponedUntil ??
+      null,
+    completedAt:
+      savedRecord.completedAt ?? null,
+    responsibleName:
+      savedRecord.responsibleName ??
+      '',
+    notes:
+      savedRecord.notes ?? '',
+  };
+}
+
+function generateIntervalOccurrences({
+  treatment,
+  recordsMap,
+  childrenMap,
+  treatmentStatus,
+  rangeStart,
+  rangeEnd,
+  now,
+}) {
+  const firstDoseDate =
+    getTreatmentFirstDoseDate(
+      treatment,
+    );
+
+  const intervalHours = Number(
+    treatment.intervalHours,
+  );
+
+  if (
+    !firstDoseDate ||
+    !Number.isFinite(intervalHours) ||
+    intervalHours <= 0
+  ) {
+    return [];
+  }
+
+  const treatmentEndDate =
+    getTreatmentEndDate(
+      treatment,
+    );
+
+  const scheduledDate =
+    new Date(firstDoseDate);
+
+  /*
+   * La secuencia comienza exactamente en
+   * la primera toma elegida. Nunca se crean
+   * horarios anteriores dentro de ese día.
+   */
+  while (
+    scheduledDate < rangeStart
+  ) {
+    scheduledDate.setMinutes(
+      scheduledDate.getMinutes() +
+        intervalHours * 60,
+    );
+  }
+
+  const reminders = [];
+
+  while (
+    scheduledDate <= rangeEnd &&
+    (
+      !treatmentEndDate ||
+      scheduledDate <=
+        treatmentEndDate
+    )
+  ) {
+    if (
+      (
+        treatmentStatus ===
+          'completed' ||
+        treatmentStatus ===
+          'paused'
+      ) &&
+      scheduledDate > now
+    ) {
+      break;
+    }
+
+    reminders.push(
+      createReminder({
+        treatment,
+        scheduledDate:
+          new Date(scheduledDate),
+        recordsMap,
+        childrenMap,
+        treatmentStatus,
+      }),
+    );
+
+    scheduledDate.setMinutes(
+      scheduledDate.getMinutes() +
+        intervalHours * 60,
+    );
+  }
+
+  return reminders;
+}
+
+function generateCustomOccurrences({
+  treatment,
+  recordsMap,
+  childrenMap,
+  treatmentStatus,
+  rangeStart,
+  rangeEnd,
+  now,
+}) {
+  const treatmentTimes =
+    getTreatmentTimes(
+      treatment,
+    );
+
+  if (
+    treatmentTimes.length === 0 ||
+    !treatment.startDate
+  ) {
+    return [];
+  }
+
+  const reminders = [];
+  const currentDate =
+    new Date(rangeStart);
+
+  while (
+    currentDate <= rangeEnd
+  ) {
+    if (
+      isDateInsideTreatment(
+        currentDate,
+        treatment,
+      )
+    ) {
+      const dateKey =
+        getLocalDateKey(
+          currentDate,
+        );
+
+      treatmentTimes.forEach(
+        (time) => {
+          const scheduledDate =
+            createLocalDateTime(
+              dateKey,
+              time,
+            );
+
+          if (!scheduledDate) {
+            return;
+          }
+
+          if (
+            (
+              treatmentStatus ===
+                'completed' ||
+              treatmentStatus ===
+                'paused'
+            ) &&
+            scheduledDate > now
+          ) {
+            return;
+          }
+
+          reminders.push(
+            createReminder({
+              treatment,
+              scheduledDate,
+              recordsMap,
+              childrenMap,
+              treatmentStatus,
+            }),
+          );
+        },
+      );
+    }
+
+    currentDate.setDate(
+      currentDate.getDate() + 1,
+    );
+  }
+
+  return reminders;
 }
 
 export function generateReminderOccurrences({
@@ -196,129 +474,93 @@ export function generateReminderOccurrences({
   daysBack = 14,
   daysForward = 14,
 }) {
-  const recordsMap = Object.fromEntries(
-    records.map((record) => [
-      record.id,
-      record,
-    ]),
-  );
+  const recordsMap =
+    Object.fromEntries(
+      records.map((record) => [
+        record.id,
+        record,
+      ]),
+    );
 
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  today.setHours(
+    0,
+    0,
+    0,
+    0,
+  );
 
-  const rangeStart = new Date(today);
+  const rangeStart =
+    new Date(today);
+
   rangeStart.setDate(
-    rangeStart.getDate() - daysBack,
+    rangeStart.getDate() -
+      daysBack,
   );
 
-  const rangeEnd = new Date(today);
+  const rangeEnd =
+    new Date(today);
+
   rangeEnd.setDate(
-    rangeEnd.getDate() + daysForward,
+    rangeEnd.getDate() +
+      daysForward,
   );
-  rangeEnd.setHours(23, 59, 59, 999);
 
-  const reminders = [];
+  rangeEnd.setHours(
+    23,
+    59,
+    59,
+    999,
+  );
 
-  treatments.forEach((treatment) => {
-    const treatmentTimes =
-      getTreatmentTimes(treatment);
+  const now = new Date();
 
-    if (
-      treatmentTimes.length === 0 ||
-      !treatment.startDate
-    ) {
-      return;
-    }
+  const reminders =
+    treatments.flatMap(
+      (treatment) => {
+        if (
+          !treatment.startDate
+        ) {
+          return [];
+        }
 
-    const treatmentStatus =
-      getTreatmentStatus(treatment);
+        const treatmentStatus =
+          getTreatmentStatus(
+            treatment,
+          );
 
-    const currentDate = new Date(rangeStart);
-
-    while (currentDate <= rangeEnd) {
-      if (
-        isDateInsideTreatment(
-          currentDate,
-          treatment,
-        )
-      ) {
-        const dateKey =
-          getLocalDateKey(currentDate);
-
-        treatmentTimes.forEach((time) => {
-          const scheduledDate =
-            createLocalDateTime(dateKey, time);
-
-          if (!scheduledDate) {
-            return;
-          }
-
-          if (
-            treatmentStatus === 'completed' &&
-            scheduledDate > new Date()
-          ) {
-            return;
-          }
-
-          if (
-            treatmentStatus === 'paused' &&
-            scheduledDate > new Date()
-          ) {
-            return;
-          }
-
-          const reminderId = [
-            treatment.id,
-            dateKey,
-            time.replace(':', ''),
-          ].join('-');
-
-          const savedRecord =
-            recordsMap[reminderId] ?? {};
-
-          reminders.push({
-            id: reminderId,
-            treatmentId: treatment.id,
-            childId: treatment.childId,
-            medicationName:
-              treatment.medicationName,
-            presentation:
-              treatment.presentation,
-            dosageInstruction:
-              treatment.dosageInstruction,
-            administrationRoute:
-              treatment.administrationRoute,
-            childName:
-              childrenMap[treatment.childId]
-                ?.fullName ??
-              'Perfil no disponible',
-            scheduledAt:
-              scheduledDate.toISOString(),
-            originalTime: time,
+        if (
+          treatment.frequencyMode ===
+          'custom'
+        ) {
+          return generateCustomOccurrences({
+            treatment,
+            recordsMap,
+            childrenMap,
             treatmentStatus,
-            status:
-              savedRecord.status ?? 'pending',
-            postponedUntil:
-              savedRecord.postponedUntil ??
-              null,
-            completedAt:
-              savedRecord.completedAt ?? null,
-            responsibleName:
-              savedRecord.responsibleName ??
-              '',
-            notes: savedRecord.notes ?? '',
+            rangeStart,
+            rangeEnd,
+            now,
           });
-        });
-      }
+        }
 
-      currentDate.setDate(
-        currentDate.getDate() + 1,
-      );
-    }
-  });
+        return generateIntervalOccurrences({
+          treatment,
+          recordsMap,
+          childrenMap,
+          treatmentStatus,
+          rangeStart,
+          rangeEnd,
+          now,
+        });
+      },
+    );
 
   return reminders.sort(
-    (firstReminder, secondReminder) =>
+    (
+      firstReminder,
+      secondReminder,
+    ) =>
       getReminderEffectiveDate(
         firstReminder,
       ).getTime() -

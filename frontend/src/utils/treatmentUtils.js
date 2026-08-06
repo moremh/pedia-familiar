@@ -132,7 +132,7 @@ export function generateIntervalTimes(
     );
   }
 
-  return [...new Set(times)].sort();
+  return [...new Set(times)];
 }
 
 export function getTreatmentTimes(treatment) {
@@ -210,6 +210,28 @@ export function getTreatmentScheduleDescription(treatment) {
     : intervalText;
 }
 
+function getTreatmentFirstDoseDate(
+  treatment,
+) {
+  if (
+    treatment.frequencyMode !== 'interval' ||
+    !treatment.startDate ||
+    !treatment.firstDoseTime
+  ) {
+    return null;
+  }
+
+  const firstDoseDate = new Date(
+    `${treatment.startDate}T${treatment.firstDoseTime}:00`,
+  );
+
+  return Number.isNaN(
+    firstDoseDate.getTime(),
+  )
+    ? null
+    : firstDoseDate;
+}
+
 export function getNextTreatmentDose(treatment) {
   const status = getTreatmentStatus(treatment);
 
@@ -220,21 +242,69 @@ export function getNextTreatmentDose(treatment) {
     return null;
   }
 
-  const times = getTreatmentTimes(treatment);
-
-  if (times.length === 0 || !treatment.startDate) {
+  if (!treatment.startDate) {
     return null;
   }
 
   const now = new Date();
 
+  const endDate = treatment.endDate
+    ? new Date(
+        `${treatment.endDate}T23:59:59.999`,
+      )
+    : null;
+
+  if (
+    treatment.frequencyMode !== 'custom'
+  ) {
+    const firstDoseDate =
+      getTreatmentFirstDoseDate(
+        treatment,
+      );
+
+    const intervalHours = Number(
+      treatment.intervalHours,
+    );
+
+    if (
+      !firstDoseDate ||
+      !Number.isFinite(intervalHours) ||
+      intervalHours <= 0
+    ) {
+      return null;
+    }
+
+    const nextDose =
+      new Date(firstDoseDate);
+
+    while (nextDose < now) {
+      nextDose.setMinutes(
+        nextDose.getMinutes() +
+          intervalHours * 60,
+      );
+    }
+
+    if (
+      endDate &&
+      nextDose > endDate
+    ) {
+      return null;
+    }
+
+    return nextDose;
+  }
+
+  const times = getTreatmentTimes(
+    treatment,
+  );
+
+  if (times.length === 0) {
+    return null;
+  }
+
   const startDate = new Date(
     `${treatment.startDate}T00:00:00`,
   );
-
-  const endDate = treatment.endDate
-    ? new Date(`${treatment.endDate}T23:59:59`)
-    : null;
 
   let currentDate =
     startDate > now
@@ -245,17 +315,29 @@ export function getNextTreatmentDose(treatment) {
           now.getDate(),
         );
 
-  for (let dayOffset = 0; dayOffset < 370; dayOffset += 1) {
-    const dateToCheck = new Date(currentDate);
+  for (
+    let dayOffset = 0;
+    dayOffset < 370;
+    dayOffset += 1
+  ) {
+    const dateToCheck =
+      new Date(currentDate);
 
-    dateToCheck.setDate(currentDate.getDate() + dayOffset);
+    dateToCheck.setDate(
+      currentDate.getDate() +
+        dayOffset,
+    );
 
-    if (endDate && dateToCheck > endDate) {
+    if (
+      endDate &&
+      dateToCheck > endDate
+    ) {
       return null;
     }
 
     for (const time of times) {
-      const [hours, minutes] = time.split(':').map(Number);
+      const [hours, minutes] =
+        time.split(':').map(Number);
 
       const doseDate = new Date(
         dateToCheck.getFullYear(),
@@ -263,9 +345,18 @@ export function getNextTreatmentDose(treatment) {
         dateToCheck.getDate(),
         hours,
         minutes,
+        0,
+        0,
       );
 
-      if (doseDate >= now && doseDate >= startDate) {
+      if (
+        doseDate >= now &&
+        doseDate >= startDate &&
+        (
+          !endDate ||
+          doseDate <= endDate
+        )
+      ) {
         return doseDate;
       }
     }
