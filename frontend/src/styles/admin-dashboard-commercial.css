@@ -1,0 +1,452 @@
+
+
+/* =========================================================
+   Configuración comercial
+   ========================================================= */
+
+.commercial-panel__header-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: #e7f4f6;
+  color: #327f91;
+  font-size: 1.15rem;
+  place-items: center;
+}
+
+.commercial-loading {
+  display: flex;
+  min-height: 120px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #718291;
+  font-size: 0.78rem;
+}
+
+.commercial-feedback {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 18px;
+  padding: 13px 15px;
+  border-radius: 13px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.commercial-feedback--success {
+  border: 1px solid #cfe4d4;
+  background: #edf8ef;
+  color: #4d7e59;
+}
+
+.commercial-feedback--error {
+  border: 1px solid #eccaca;
+  background: #fff0f0;
+  color: #a64c4c;
+}
+
+.commercial-prices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: stretch;
+  gap: 15px;
+}
+
+.commercial-price-card {
+  padding: 18px;
+  border: 1px solid #dfe8ed;
+  border-radius: 17px;
+  background: #f9fbfc;
+}
+
+.commercial-price-card header,
+.commercial-promotion-form > header,
+.commercial-promotions-list > header {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 15px;
+}
+
+.commercial-price-card header > span,
+.commercial-promotion-form > header > span {
+  display: grid;
+  width: 41px;
+  height: 41px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  background: #e4f2f5;
+  color: #327f91;
+  place-items: center;
+}
+
+.commercial-price-card header div,
+.commercial-promotion-form > header div {
+  display: flex;
+  flex-direction: column;
+}
+
+.commercial-price-card header small,
+.commercial-promotion-form > header small,
+.commercial-promotions-list > header small {
+  color: #8795a1;
+  font-size: 0.61rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.commercial-price-card header strong,
+.commercial-promotion-form h3,
+.commercial-promotions-list h3 {
+  margin: 2px 0 0;
+  color: #33495c;
+  font-size: 0.85rem;
+}
+
+.commercial-price-card label,
+.commercial-promotion-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #566b7d;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.commercial-price-card input,
+.commercial-promotion-form input,
+.commercial-promotion-form select,
+.commercial-promotion-form textarea {
+  width: 100%;
+  min-height: 43px;
+  padding: 10px 12px;
+  border: 1px solid #d9e4ea;
+  border-radius: 11px;
+  outline: 0;
+  background: #ffffff;
+  color: #33495c;
+  font: inherit;
+  font-weight: 500;
+}
+
+.commercial-promotion-form textarea {
+  min-height: 78px;
+  resize: vertical;
+}
+
+.commercial-price-card input:focus,
+.commercial-promotion-form input:focus,
+.commercial-promotion-form select:focus,
+.commercial-promotion-form textarea:focus {
+  border-color: #65a8b7;
+  box-shadow: 0 0 0 3px rgba(70, 145, 161, 0.1);
+}
+
+.commercial-price-card__promotion {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 11px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: #fff4df;
+  color: #9a6a25;
+}
+
+.commercial-price-card__promotion > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.commercial-price-card__promotion small {
+  font-size: 0.58rem;
+}
+
+.commercial-price-card__promotion strong {
+  font-size: 0.78rem;
+}
+
+.commercial-switch {
+  display: flex !important;
+  min-height: 32px;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+  margin-top: 13px;
+  cursor: pointer;
+}
+
+.commercial-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.commercial-switch > span {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #cbd6dc;
+  transition: 0.2s ease;
+}
+
+.commercial-switch > span::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 5px rgba(28, 49, 63, 0.18);
+  content: '';
+  transition: 0.2s ease;
+}
+
+.commercial-switch input:checked + span {
+  background: #3b8fa1;
+}
+
+.commercial-switch input:checked + span::after {
+  transform: translateX(16px);
+}
+
+.commercial-prices__save {
+  min-width: 150px;
+  align-self: center;
+  justify-content: center;
+}
+
+.commercial-divider {
+  height: 1px;
+  margin: 23px 0;
+  background: #e6ecef;
+}
+
+.commercial-promotions-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.8fr) minmax(420px, 1.2fr);
+  gap: 18px;
+}
+
+.commercial-promotion-form,
+.commercial-promotions-list {
+  padding: 18px;
+  border: 1px solid #dfe8ed;
+  border-radius: 17px;
+  background: #f9fbfc;
+}
+
+.commercial-promotion-form {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.commercial-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+}
+
+.commercial-promotion-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 4px;
+}
+
+.commercial-promotions-list > header {
+  justify-content: space-between;
+}
+
+.commercial-promotions-list > header > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.commercial-promotions-list > header > strong {
+  display: grid;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: #e5f2f5;
+  color: #327f91;
+  font-size: 0.72rem;
+  place-items: center;
+}
+
+.commercial-promotions-list__items {
+  display: flex;
+  max-height: 590px;
+  flex-direction: column;
+  gap: 11px;
+  overflow-y: auto;
+  padding-right: 3px;
+}
+
+.commercial-promotion-card {
+  padding: 14px;
+  border: 1px solid #e1e8ec;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.commercial-promotion-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.commercial-promotion-card h4 {
+  margin: 5px 0 0;
+  color: #354b5e;
+  font-size: 0.78rem;
+}
+
+.commercial-promotion-card > header > strong {
+  color: #327f91;
+  font-size: 0.68rem;
+  text-align: right;
+}
+
+.commercial-promotion-card > p {
+  margin: 10px 0;
+  color: #7c8b98;
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+
+.commercial-promotion-card dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.commercial-promotion-card dl div {
+  padding: 8px;
+  border-radius: 9px;
+  background: #f4f7f9;
+}
+
+.commercial-promotion-card dt {
+  color: #91a0ac;
+  font-size: 0.56rem;
+}
+
+.commercial-promotion-card dd {
+  margin: 2px 0 0;
+  color: #4e6374;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.commercial-promotion-card footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.commercial-promotion-card footer button {
+  display: inline-flex;
+  min-height: 31px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid #d9e4e9;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #527080;
+  font-size: 0.61rem;
+  font-weight: 700;
+}
+
+.commercial-promotion-card footer button.is-danger {
+  border-color: #ecd2d2;
+  color: #aa5555;
+}
+
+.commercial-promotion-status {
+  display: inline-flex;
+  padding: 4px 7px;
+  border-radius: 999px;
+  font-size: 0.54rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.commercial-promotion-status--active {
+  background: #e7f4e9;
+  color: #4d875d;
+}
+
+.commercial-promotion-status--scheduled {
+  background: #e8f2f8;
+  color: #4a7895;
+}
+
+.commercial-promotion-status--paused,
+.commercial-promotion-status--expired {
+  background: #f0f1f2;
+  color: #788791;
+}
+
+.commercial-empty {
+  display: grid;
+  min-height: 190px;
+  color: #8b99a5;
+  font-size: 0.7rem;
+  place-items: center;
+  align-content: center;
+  gap: 9px;
+}
+
+.commercial-empty i {
+  font-size: 1.55rem;
+}
+
+@media (max-width: 1050px) {
+  .commercial-prices {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .commercial-prices__save {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
+  .commercial-promotions-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .commercial-prices,
+  .commercial-form-grid,
+  .commercial-promotion-card dl {
+    grid-template-columns: 1fr;
+  }
+
+  .commercial-prices__save {
+    width: 100%;
+  }
+
+  .commercial-promotion-form__actions {
+    flex-direction: column-reverse;
+  }
+
+  .commercial-promotion-form__actions .btn {
+    width: 100%;
+  }
+}

@@ -1,0 +1,569 @@
+.medication-history-page {
+  width: min(100%, 1400px);
+  margin: 0 auto;
+}
+
+.medication-history-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+  padding: 26px 28px;
+  border: 1px solid #e1e9ee;
+  border-radius: 21px;
+  background: #ffffff;
+}
+
+.medication-history-page__header
+  > div
+  > span {
+  color: #327f91;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.medication-history-page__header h2 {
+  margin: 4px 0;
+  color: #293d50;
+  font-size: 1.55rem;
+}
+
+.medication-history-page__header p {
+  margin: 0;
+  color: #7b8997;
+  font-size: 0.82rem;
+}
+
+.medication-history-page__header .btn {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  gap: 8px;
+  border-radius: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.medication-history-statistics {
+  display: grid;
+  grid-template-columns: repeat(
+    4,
+    minmax(0, 1fr)
+  );
+  gap: 17px;
+  margin-bottom: 22px;
+}
+
+.medication-history-statistics article {
+  display: flex;
+  min-height: 105px;
+  align-items: center;
+  gap: 15px;
+  padding: 19px;
+  border: 1px solid #e1e9ee;
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.medication-history-statistics__icon {
+  display: grid;
+  width: 49px;
+  height: 49px;
+  flex-shrink: 0;
+  border-radius: 15px;
+  background: #e5f3f6;
+  color: #327f91;
+  font-size: 1.2rem;
+  place-items: center;
+}
+
+.medication-history-statistics__icon--administered {
+  background: #e8f4e9;
+  color: #4d875d;
+}
+
+.medication-history-statistics__icon--omitted {
+  background: #fff0f0;
+  color: #b34b4b;
+}
+
+.medication-history-statistics__icon--percentage {
+  background: #eeeaf8;
+  color: #755fa0;
+}
+
+.medication-history-statistics article > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.medication-history-statistics strong {
+  color: #293d50;
+  font-size: 1.65rem;
+}
+
+.medication-history-statistics article div span {
+  margin-top: 4px;
+  color: #81909e;
+  font-size: 0.7rem;
+}
+
+.medication-history-filters {
+  display: grid;
+  grid-template-columns:
+    minmax(250px, 1fr)
+    170px
+    190px
+    210px
+    210px;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid #e1e9ee;
+  border-radius: 17px;
+  background: #ffffff;
+}
+
+.medication-history-filters__search {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid #dce6ec;
+  border-radius: 13px;
+  background: #f9fbfc;
+}
+
+.medication-history-filters__search > i {
+  color: #8795a2;
+}
+
+.medication-history-filters__search input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #34495c;
+  font-size: 0.78rem;
+}
+
+.medication-history-filters__search button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 9px;
+  background: #edf2f4;
+  color: #6f7f8d;
+  place-items: center;
+}
+
+.medication-history-filters > select {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #dce6ec;
+  border-radius: 13px;
+  outline: 0;
+  background: #f9fbfc;
+  color: #536779;
+  font-size: 0.73rem;
+}
+
+.medication-history-filters__date {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.medication-history-filters__date label {
+  color: #687a89;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.medication-history-filters__date input {
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid #dce6ec;
+  border-radius: 12px;
+  outline: 0;
+  background: #f9fbfc;
+  color: #536779;
+  font-size: 0.72rem;
+}
+
+.medication-history-filters__clear {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #dce6ec;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #617381;
+  font-size: 0.67rem;
+  font-weight: 700;
+}
+
+.medication-history-page__result {
+  margin: 13px 2px 18px;
+  color: #82909d;
+  font-size: 0.72rem;
+}
+
+.medication-history-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    2,
+    minmax(0, 1fr)
+  );
+  gap: 18px;
+}
+
+.medication-history-card {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 21px;
+  border: 1px solid #e0e9ee;
+  border-radius: 20px;
+  background: #ffffff;
+}
+
+.medication-history-card::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 100%;
+  border-radius: 20px 0 0 20px;
+  background: #7e929d;
+  content: '';
+}
+
+.medication-history-card--administered::before {
+  background: #58a06b;
+}
+
+.medication-history-card--omitted::before {
+  background: #c75a5a;
+}
+
+.medication-history-card__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.medication-history-card__status-icon {
+  display: grid;
+  width: 47px;
+  height: 47px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  place-items: center;
+}
+
+.medication-history-card__status-icon--administered {
+  background: #e8f4e9;
+  color: #4d875d;
+}
+
+.medication-history-card__status-icon--omitted {
+  background: #fff0f0;
+  color: #b34b4b;
+}
+
+.medication-history-card__title {
+  min-width: 0;
+  flex: 1;
+}
+
+.medication-history-card__title > span {
+  color: #327f91;
+  font-size: 0.57rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.medication-history-card__title h3 {
+  overflow: hidden;
+  margin: 4px 0 2px;
+  color: #344a5d;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.medication-history-card__title p {
+  margin: 0;
+  color: #7e8d99;
+  font-size: 0.66rem;
+}
+
+.medication-history-card__badge {
+  flex-shrink: 0;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 0.57rem;
+  font-weight: 750;
+}
+
+.medication-history-card__badge--administered {
+  background: #e8f4e9;
+  color: #4d875d;
+}
+
+.medication-history-card__badge--omitted {
+  background: #fff0f0;
+  color: #b34b4b;
+}
+
+.medication-history-card__medicine {
+  display: grid;
+  grid-template-columns: repeat(
+    2,
+    minmax(0, 1fr)
+  );
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.medication-history-card__medicine > div {
+  min-width: 0;
+  padding: 11px;
+  border-radius: 12px;
+  background: #f7f9fa;
+}
+
+.medication-history-card__medicine span {
+  display: block;
+  color: #929da6;
+  font-size: 0.57rem;
+}
+
+.medication-history-card__medicine strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 3px;
+  color: #485d6e;
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.medication-history-card__dates {
+  display: grid;
+  grid-template-columns: repeat(
+    2,
+    minmax(0, 1fr)
+  );
+  gap: 10px;
+  margin-top: 11px;
+}
+
+.medication-history-card__dates > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 9px;
+  padding: 11px;
+  border-radius: 12px;
+  background: #f7f9fa;
+}
+
+.medication-history-card__dates > div > i {
+  flex-shrink: 0;
+  color: #327f91;
+}
+
+.medication-history-card__dates span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.medication-history-card__dates small {
+  color: #929da6;
+  font-size: 0.56rem;
+}
+
+.medication-history-card__dates strong {
+  overflow: hidden;
+  margin-top: 3px;
+  color: #485d6e;
+  font-size: 0.62rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.medication-history-card__responsible {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 11px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #edf6f8;
+}
+
+.medication-history-card__responsible > span {
+  display: grid;
+  width: 37px;
+  height: 37px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: #dcecef;
+  color: #327f91;
+  place-items: center;
+}
+
+.medication-history-card__responsible > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.medication-history-card__responsible small {
+  color: #7f909d;
+  font-size: 0.57rem;
+}
+
+.medication-history-card__responsible strong {
+  overflow: hidden;
+  margin-top: 2px;
+  color: #405668;
+  font-size: 0.67rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.medication-history-card__notes {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 11px;
+  padding: 11px;
+  border-radius: 11px;
+  background: #f7f9fa;
+  color: #657887;
+}
+
+.medication-history-card__notes p {
+  margin: 0;
+  font-size: 0.63rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.medication-history-empty {
+  display: grid;
+  min-height: 420px;
+  padding: 40px;
+  border: 1px dashed #cbd9df;
+  border-radius: 22px;
+  background: #ffffff;
+  text-align: center;
+  place-items: center;
+  align-content: center;
+}
+
+.medication-history-empty > span {
+  display: grid;
+  width: 76px;
+  height: 76px;
+  margin-bottom: 17px;
+  border-radius: 23px;
+  background: #edf6f8;
+  color: #327f91;
+  font-size: 1.8rem;
+  place-items: center;
+}
+
+.medication-history-empty h3 {
+  margin: 0 0 8px;
+  color: #304559;
+}
+
+.medication-history-empty p {
+  max-width: 470px;
+  margin: 0;
+  color: #82909d;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 1180px) {
+  .medication-history-statistics {
+    grid-template-columns: repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  }
+
+  .medication-history-filters {
+    grid-template-columns: repeat(
+      2,
+      minmax(0, 1fr)
+    );
+  }
+
+  .medication-history-filters__search {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 850px) {
+  .medication-history-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .medication-history-page__header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 22px;
+  }
+
+  .medication-history-page__header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .medication-history-statistics,
+  .medication-history-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .medication-history-filters__search {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .medication-history-card {
+    padding: 18px;
+  }
+
+  .medication-history-card__medicine,
+  .medication-history-card__dates {
+    grid-template-columns: 1fr;
+  }
+
+  .medication-history-card__header {
+    flex-wrap: wrap;
+  }
+
+  .medication-history-card__badge {
+    margin-left: 59px;
+  }
+}

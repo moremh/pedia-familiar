@@ -1,0 +1,39 @@
+# Dependencias
+node_modules/
+frontend/node_modules/
+
+# Variables privadas
+.env
+.env.*
+!.env.example
+
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Compilación
+dist/
+frontend/dist/
+
+# Supabase local
+.supabase/
+backend/.supabase/
+backend/supabase/.temp/
+
+# Registros
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/

@@ -1,0 +1,525 @@
+import { useMemo, useState } from 'react';
+
+import ChildCard from '../../components/cards/ChildCard.jsx';
+import ChildForm from '../../components/forms/ChildForm.jsx';
+
+import {
+  createChild,
+  deleteChild,
+  getChildren,
+  updateChild,
+} from '../../services/childrenService.js';
+
+import {
+  formatChildAge,
+  formatDate,
+  getInitials,
+  hasRegisteredAllergies,
+} from '../../utils/childUtils.js';
+
+import '../../styles/children.css';
+
+function ChildrenPage() {
+  const [children, setChildren] = useState(() =>
+    getChildren(),
+  );
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingChild, setEditingChild] = useState(null);
+  const [selectedChild, setSelectedChild] = useState(null);
+
+  const filteredChildren = useMemo(() => {
+    const normalizedSearch = searchTerm
+      .trim()
+      .toLowerCase();
+
+    if (!normalizedSearch) {
+      return children;
+    }
+
+    return children.filter((child) => {
+      const searchableValues = [
+        child.fullName,
+        child.allergies,
+        child.healthInsurance,
+        child.pediatricianName,
+      ];
+
+      return searchableValues.some((value) =>
+        String(value ?? '')
+          .toLowerCase()
+          .includes(normalizedSearch),
+      );
+    });
+  }, [children, searchTerm]);
+
+  const allergyCount = children.filter((child) =>
+    hasRegisteredAllergies(child.allergies),
+  ).length;
+
+  function refreshChildren() {
+    setChildren(getChildren());
+  }
+
+  function openCreateForm() {
+    setEditingChild(null);
+    setIsFormOpen(true);
+  }
+
+  function openEditForm(child) {
+    setSelectedChild(null);
+    setEditingChild(child);
+    setIsFormOpen(true);
+  }
+
+  function closeForm() {
+    setEditingChild(null);
+    setIsFormOpen(false);
+  }
+
+  function handleSaveChild(childData) {
+    if (editingChild) {
+      updateChild(editingChild.id, childData);
+    } else {
+      createChild(childData);
+    }
+
+    refreshChildren();
+    closeForm();
+  }
+
+  function handleDeleteChild(child) {
+    const confirmed = window.confirm(
+      `¿Querés eliminar el perfil de ${child.fullName}? Esta acción no se puede deshacer.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    deleteChild(child.id);
+
+    if (selectedChild?.id === child.id) {
+      setSelectedChild(null);
+    }
+
+    refreshChildren();
+  }
+
+  return (
+    <div className="children-page">
+      <section className="children-page__header">
+        <div>
+          <span>Perfiles infantiles</span>
+          <h2>Mis hijos</h2>
+
+          <p>
+            Administrá la información personal y médica de cada
+            hijo.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={openCreateForm}
+        >
+          <i className="bi bi-person-plus" />
+          Agregar hijo
+        </button>
+      </section>
+
+      <section className="children-statistics">
+        <article>
+          <span className="children-statistics__icon">
+            <i className="bi bi-person-hearts" />
+          </span>
+
+          <div>
+            <strong>{children.length}</strong>
+            <span>Perfiles registrados</span>
+          </div>
+        </article>
+
+        <article>
+          <span className="children-statistics__icon children-statistics__icon--warning">
+            <i className="bi bi-exclamation-triangle" />
+          </span>
+
+          <div>
+            <strong>{allergyCount}</strong>
+            <span>Con alergias registradas</span>
+          </div>
+        </article>
+
+        <article>
+          <span className="children-statistics__icon children-statistics__icon--doctor">
+            <i className="bi bi-person-badge" />
+          </span>
+
+          <div>
+            <strong>
+              {
+                children.filter(
+                  (child) => child.pediatricianName,
+                ).length
+              }
+            </strong>
+
+            <span>Con pediatra habitual</span>
+          </div>
+        </article>
+      </section>
+
+      <section className="children-toolbar">
+        <div className="children-toolbar__search">
+          <i className="bi bi-search" />
+
+          <input
+            type="search"
+            value={searchTerm}
+            onChange={(event) =>
+              setSearchTerm(event.target.value)
+            }
+            placeholder="Buscar por nombre, alergia, pediatra u obra social"
+            aria-label="Buscar perfiles infantiles"
+          />
+
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              aria-label="Limpiar búsqueda"
+            >
+              <i className="bi bi-x-lg" />
+            </button>
+          )}
+        </div>
+
+        <span className="children-toolbar__result">
+          {filteredChildren.length}{' '}
+          {filteredChildren.length === 1
+            ? 'perfil encontrado'
+            : 'perfiles encontrados'}
+        </span>
+      </section>
+
+      {filteredChildren.length > 0 ? (
+        <section className="children-grid">
+          {filteredChildren.map((child) => (
+            <ChildCard
+              key={child.id}
+              child={child}
+              onView={setSelectedChild}
+              onEdit={openEditForm}
+              onDelete={handleDeleteChild}
+            />
+          ))}
+        </section>
+      ) : (
+        <section className="children-empty">
+          <span>
+            <i className="bi bi-person-hearts" />
+          </span>
+
+          <h3>
+            {children.length === 0
+              ? 'Todavía no hay perfiles'
+              : 'No encontramos resultados'}
+          </h3>
+
+          <p>
+            {children.length === 0
+              ? 'Creá el primer perfil infantil para comenzar a organizar su información médica.'
+              : 'Probá buscando con otro nombre, pediatra, alergia u obra social.'}
+          </p>
+
+          {children.length === 0 && (
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={openCreateForm}
+            >
+              Agregar primer hijo
+            </button>
+          )}
+        </section>
+      )}
+
+      {isFormOpen && (
+        <div
+          className="children-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="childFormTitle"
+        >
+          <button
+            type="button"
+            className="children-modal__backdrop"
+            onClick={closeForm}
+            aria-label="Cerrar formulario"
+          />
+
+          <div className="children-modal__container children-modal__container--form">
+            <header className="children-modal__header">
+              <div>
+                <span>Perfil infantil</span>
+
+                <h2 id="childFormTitle">
+                  {editingChild
+                    ? 'Editar perfil'
+                    : 'Agregar hijo'}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeForm}
+                aria-label="Cerrar"
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </header>
+
+            <div className="children-modal__body">
+              <ChildForm
+                initialData={editingChild}
+                onSubmit={handleSaveChild}
+                onCancel={closeForm}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedChild && (
+        <div
+          className="children-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="childDetailTitle"
+        >
+          <button
+            type="button"
+            className="children-modal__backdrop"
+            onClick={() => setSelectedChild(null)}
+            aria-label="Cerrar perfil"
+          />
+
+          <div className="children-modal__container">
+            <header className="children-modal__header">
+              <div>
+                <span>Información completa</span>
+                <h2 id="childDetailTitle">
+                  Perfil infantil
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedChild(null)}
+                aria-label="Cerrar"
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </header>
+
+            <div className="children-modal__body">
+              <div className="child-detail__identity">
+                <div className="child-detail__avatar">
+                  {getInitials(selectedChild.fullName)}
+                </div>
+
+                <div>
+                  <h3>{selectedChild.fullName}</h3>
+                  <p>
+                    {formatChildAge(
+                      selectedChild.birthDate,
+                    )}
+                  </p>
+                </div>
+
+                {hasRegisteredAllergies(
+                  selectedChild.allergies,
+                ) && (
+                  <span className="child-detail__warning">
+                    <i className="bi bi-exclamation-triangle-fill" />
+                    Alergia registrada
+                  </span>
+                )}
+              </div>
+
+              <section className="child-detail__section">
+                <h4>
+                  <i className="bi bi-person-vcard" />
+                  Datos personales
+                </h4>
+
+                <dl className="child-detail__grid">
+                  <div>
+                    <dt>Fecha de nacimiento</dt>
+                    <dd>
+                      {formatDate(selectedChild.birthDate)}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt>Grupo sanguíneo</dt>
+                    <dd>
+                      {selectedChild.bloodType ||
+                        'No registrado'}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt>Peso actual</dt>
+                    <dd>
+                      {selectedChild.weight !== ''
+                        ? `${selectedChild.weight} kg`
+                        : 'No registrado'}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt>Altura actual</dt>
+                    <dd>
+                      {selectedChild.height !== ''
+                        ? `${selectedChild.height} cm`
+                        : 'No registrada'}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section className="child-detail__section">
+                <h4>
+                  <i className="bi bi-heart-pulse" />
+                  Información médica
+                </h4>
+
+                <div className="child-detail__text">
+                  <strong>Alergias conocidas</strong>
+                  <p>
+                    {selectedChild.allergies ||
+                      'No se registraron alergias.'}
+                  </p>
+                </div>
+
+                <div className="child-detail__text">
+                  <strong>Antecedentes médicos</strong>
+                  <p>
+                    {selectedChild.medicalHistory ||
+                      'No se registraron antecedentes.'}
+                  </p>
+                </div>
+              </section>
+
+              <section className="child-detail__section">
+                <h4>
+                  <i className="bi bi-shield-check" />
+                  Cobertura y pediatra
+                </h4>
+
+                <dl className="child-detail__grid">
+                  <div>
+                    <dt>Obra social</dt>
+                    <dd>
+                      {selectedChild.healthInsurance ||
+                        'No registrada'}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt>Número de afiliado</dt>
+                    <dd>
+                      {selectedChild.memberNumber ||
+                        'No registrado'}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt>Pediatra habitual</dt>
+                    <dd>
+                      {selectedChild.pediatricianName ||
+                        'No registrado'}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt>Teléfono del pediatra</dt>
+                    <dd>
+                      {selectedChild.pediatricianPhone ||
+                        'No registrado'}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section className="child-detail__section">
+                <h4>
+                  <i className="bi bi-telephone" />
+                  Contacto de emergencia
+                </h4>
+
+                <dl className="child-detail__grid">
+                  <div>
+                    <dt>Nombre</dt>
+                    <dd>
+                      {selectedChild.emergencyContactName ||
+                        'No registrado'}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt>Teléfono</dt>
+                    <dd>
+                      {selectedChild.emergencyContactPhone ||
+                        'No registrado'}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+
+              {selectedChild.notes && (
+                <section className="child-detail__section">
+                  <h4>
+                    <i className="bi bi-journal-text" />
+                    Observaciones
+                  </h4>
+
+                  <div className="child-detail__text">
+                    <p>{selectedChild.notes}</p>
+                  </div>
+                </section>
+              )}
+            </div>
+
+            <footer className="children-modal__footer">
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={() => setSelectedChild(null)}
+              >
+                Cerrar
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() =>
+                  openEditForm(selectedChild)
+                }
+              >
+                <i className="bi bi-pencil" />
+                Editar perfil
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default ChildrenPage;

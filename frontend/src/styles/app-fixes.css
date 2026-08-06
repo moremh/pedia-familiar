@@ -1,0 +1,172 @@
+/* Ajustes globales posteriores a los estilos de cada página. */
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+.auth-page,
+.invitation-page,
+.subscription-expired-page,
+.not-found-page {
+  min-height: 100dvh;
+  padding-top: max(24px, env(safe-area-inset-top));
+  padding-right: max(18px, env(safe-area-inset-right));
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  padding-left: max(18px, env(safe-area-inset-left));
+}
+
+.family-layout,
+.family-layout__content {
+  min-height: 100dvh;
+}
+
+.family-sidebar {
+  height: 100dvh;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.family-navbar {
+  padding-top: calc(14px + env(safe-area-inset-top));
+  padding-right: max(32px, env(safe-area-inset-right));
+}
+
+.family-main-content {
+  padding-right: max(32px, env(safe-area-inset-right));
+  padding-bottom: calc(50px + env(safe-area-inset-bottom));
+}
+
+:is(
+  .children-modal,
+  .consultations-modal,
+  .treatments-modal,
+  .vaccines-modal,
+  .medicine-cabinet-modal,
+  .caregivers-modal,
+  .documents-modal,
+  .admin-modal
+) {
+  display: flex;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  padding-top: max(22px, env(safe-area-inset-top));
+  padding-right: max(22px, env(safe-area-inset-right));
+  padding-bottom: max(22px, env(safe-area-inset-bottom));
+  padding-left: max(22px, env(safe-area-inset-left));
+}
+
+:is(
+  .children-modal__container,
+  .consultations-modal__container,
+  .treatments-modal__container,
+  .vaccines-modal__container,
+  .medicine-cabinet-modal__container,
+  .caregivers-modal__container,
+  .documents-modal__container,
+  .admin-modal__container
+) {
+  min-height: 0;
+  max-height: calc(
+    100dvh -
+      max(44px, env(safe-area-inset-top)) -
+      env(safe-area-inset-bottom)
+  );
+  isolation: isolate;
+}
+
+:is(
+  .children-modal__header,
+  .children-modal__footer,
+  .consultations-modal__header,
+  .consultations-modal__footer,
+  .treatments-modal__header,
+  .treatments-modal__footer,
+  .vaccines-modal__header,
+  .vaccines-modal__footer,
+  .medicine-cabinet-modal__header,
+  .medicine-cabinet-modal__footer,
+  .caregivers-modal__header,
+  .caregivers-modal__footer,
+  .documents-modal__header,
+  .documents-modal__footer,
+  .admin-modal__header,
+  .admin-modal__footer
+) {
+  flex: 0 0 auto;
+  background: #ffffff;
+}
+
+:is(
+  .children-modal__body,
+  .consultations-modal__body,
+  .treatments-modal__body,
+  .vaccines-modal__body,
+  .medicine-cabinet-modal__body,
+  .caregivers-modal__body,
+  .documents-modal__body,
+  .admin-modal__body
+) {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 760px) {
+  .family-navbar {
+    padding-right: max(18px, env(safe-area-inset-right));
+    padding-left: max(18px, env(safe-area-inset-left));
+  }
+
+  .family-main-content {
+    padding-right: max(18px, env(safe-area-inset-right));
+    padding-bottom: calc(32px + env(safe-area-inset-bottom));
+    padding-left: max(18px, env(safe-area-inset-left));
+  }
+
+  :is(
+    .children-modal,
+    .consultations-modal,
+    .treatments-modal,
+    .vaccines-modal,
+    .medicine-cabinet-modal,
+    .caregivers-modal,
+    .documents-modal,
+    .admin-modal
+  ) {
+    align-items: stretch;
+    padding-top: max(10px, env(safe-area-inset-top));
+    padding-right: max(10px, env(safe-area-inset-right));
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    padding-left: max(10px, env(safe-area-inset-left));
+  }
+
+  :is(
+    .children-modal__container,
+    .consultations-modal__container,
+    .treatments-modal__container,
+    .vaccines-modal__container,
+    .medicine-cabinet-modal__container,
+    .caregivers-modal__container,
+    .documents-modal__container,
+    .admin-modal__container
+  ) {
+    width: 100%;
+    height: calc(
+      100dvh -
+        max(20px, env(safe-area-inset-top)) -
+        env(safe-area-inset-bottom)
+    );
+    max-height: none;
+  }
+}
