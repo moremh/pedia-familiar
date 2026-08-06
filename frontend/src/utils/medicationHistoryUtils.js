@@ -87,8 +87,231 @@ export function getLocalHistoryDateKey(
   return `${year}-${month}-${day}`;
 }
 
+function createTreatmentDateTime(
+  dateValue,
+  timeValue = '00:00',
+) {
+  if (!dateValue) {
+    return null;
+  }
+
+  const normalizedTime =
+    /^\d{2}:\d{2}$/.test(
+      String(timeValue || ''),
+    )
+      ? timeValue
+      : '00:00';
+
+  const date = new Date(
+    `${dateValue}T${normalizedTime}:00`,
+  );
+
+  return Number.isNaN(
+    date.getTime(),
+  )
+    ? null
+    : date;
+}
+
+function getPlannedTreatmentEndDate(
+  treatment,
+) {
+  if (treatment.endDate) {
+    const explicitEnd = new Date(
+      `${treatment.endDate}T23:59:59.999`,
+    );
+
+    if (
+      !Number.isNaN(
+        explicitEnd.getTime(),
+      )
+    ) {
+      return explicitEnd;
+    }
+  }
+
+  const startDate =
+    createTreatmentDateTime(
+      treatment.startDate,
+    );
+
+  const durationDays = Number(
+    treatment.durationDays,
+  );
+
+  if (
+    !startDate ||
+    !Number.isFinite(durationDays) ||
+    durationDays < 1
+  ) {
+    return null;
+  }
+
+  const calculatedEnd = new Date(
+    startDate,
+  );
+
+  calculatedEnd.setDate(
+    calculatedEnd.getDate() +
+      Math.floor(durationDays) -
+      1,
+  );
+
+  calculatedEnd.setHours(
+    23,
+    59,
+    59,
+    999,
+  );
+
+  return calculatedEnd;
+}
+
+function countIntervalTreatmentDoses(
+  treatment,
+) {
+  const firstDose =
+    createTreatmentDateTime(
+      treatment.startDate,
+      treatment.firstDoseTime,
+    );
+
+  const endDate =
+    getPlannedTreatmentEndDate(
+      treatment,
+    );
+
+  const intervalHours = Number(
+    treatment.intervalHours,
+  );
+
+  if (
+    !firstDose ||
+    !endDate ||
+    firstDose > endDate ||
+    !Number.isFinite(intervalHours) ||
+    intervalHours <= 0
+  ) {
+    return 0;
+  }
+
+  const intervalMilliseconds =
+    intervalHours * 60 * 60 * 1000;
+
+  return (
+    Math.floor(
+      (endDate.getTime() -
+        firstDose.getTime()) /
+        intervalMilliseconds,
+    ) + 1
+  );
+}
+
+function countCustomTreatmentDoses(
+  treatment,
+) {
+  const startDate =
+    createTreatmentDateTime(
+      treatment.startDate,
+    );
+
+  const endDate =
+    getPlannedTreatmentEndDate(
+      treatment,
+    );
+
+  const treatmentTimes = [
+    ...new Set(
+      (
+        Array.isArray(
+          treatment.customTimes,
+        )
+          ? treatment.customTimes
+          : []
+      ).filter((time) =>
+        /^([01]\d|2[0-3]):[0-5]\d$/.test(
+          String(time || ''),
+        ),
+      ),
+    ),
+  ];
+
+  if (
+    !startDate ||
+    !endDate ||
+    startDate > endDate ||
+    treatmentTimes.length === 0
+  ) {
+    return 0;
+  }
+
+  const currentDate = new Date(
+    startDate,
+  );
+
+  currentDate.setHours(
+    0,
+    0,
+    0,
+    0,
+  );
+
+  const lastDate = new Date(
+    endDate,
+  );
+
+  lastDate.setHours(
+    0,
+    0,
+    0,
+    0,
+  );
+
+  let dayCount = 0;
+
+  while (
+    currentDate <= lastDate
+  ) {
+    dayCount += 1;
+
+    currentDate.setDate(
+      currentDate.getDate() + 1,
+    );
+  }
+
+  return (
+    dayCount *
+    treatmentTimes.length
+  );
+}
+
+export function countPlannedTreatmentDoses(
+  treatment,
+) {
+  if (
+    !treatment ||
+    !treatment.startDate
+  ) {
+    return 0;
+  }
+
+  if (
+    treatment.frequencyMode ===
+    'custom'
+  ) {
+    return countCustomTreatmentDoses(
+      treatment,
+    );
+  }
+
+  return countIntervalTreatmentDoses(
+    treatment,
+  );
+}
+
 export function calculateHistoryStats(
   history,
+  treatments = [],
 ) {
   const administered = history.filter(
     (item) =>
@@ -101,10 +324,57 @@ export function calculateHistoryStats(
 
   const total = administered + omitted;
 
+  const historyTreatmentIds =
+    new Set(
+      history
+        .map((item) =>
+          item.treatmentId,
+        )
+        .filter(Boolean),
+    );
+
+  const plannedDoses = treatments
+    .filter((treatment) =>
+      historyTreatmentIds.has(
+        treatment.id,
+      ),
+    )
+    .reduce(
+      (totalDoses, treatment) =>
+        totalDoses +
+        countPlannedTreatmentDoses(
+          treatment,
+        ),
+      0,
+    );
+
+  /*
+   * El total nunca puede quedar por debajo de
+   * las acciones ya registradas, incluso si un
+   * tratamiento antiguo fue eliminado.
+   */
+  const totalPlanned = Math.max(
+    plannedDoses,
+    total,
+  );
+
+  const progressPercentage =
+    totalPlanned > 0
+      ? Math.min(
+          100,
+          Math.round(
+            (administered /
+              totalPlanned) *
+              100,
+          ),
+        )
+      : 0;
+
   const adherencePercentage =
     total > 0
       ? Math.round(
-          (administered / total) * 100,
+          (administered / total) *
+            100,
         )
       : 0;
 
@@ -112,6 +382,8 @@ export function calculateHistoryStats(
     total,
     administered,
     omitted,
+    totalPlanned,
+    progressPercentage,
     adherencePercentage,
   };
 }

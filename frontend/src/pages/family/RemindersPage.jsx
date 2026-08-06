@@ -33,6 +33,10 @@ import {
 } from '../../services/medicineCabinetService.js';
 
 import {
+  flushPendingRemoteSync,
+} from '../../services/supabaseSyncService.js';
+
+import {
   getActiveCaregiverId,
   getCaregivers,
   setActiveCaregiverId,
@@ -402,7 +406,7 @@ function RemindersPage() {
     refreshRecords();
   }
 
-  function handleOmit(reminder) {
+  async function handleOmit(reminder) {
     if (!selectedCaregiver) {
       window.alert(
         'Primero seleccioná o registrá un responsable familiar.',
@@ -411,12 +415,15 @@ function RemindersPage() {
       return;
     }
 
+    const effectiveDate =
+      getReminderEffectiveDate(
+        reminder,
+      );
+
     const reminderTime =
       reminder.originalTime ||
       formatReminderTime(
-        getReminderEffectiveDate(
-          reminder,
-        ),
+        effectiveDate,
       );
 
     const confirmed = window.confirm(
@@ -435,10 +442,44 @@ function RemindersPage() {
 
         responsibleName:
           selectedCaregiver.fullName,
+
+        treatmentId:
+          reminder.treatmentId,
+
+        childId:
+          reminder.childId,
+
+        childName:
+          reminder.childName,
+
+        medicationName:
+          reminder.medicationName,
+
+        presentation:
+          reminder.presentation,
+
+        dosageInstruction:
+          reminder.dosageInstruction,
+
+        scheduledAt:
+          effectiveDate.toISOString(),
+
+        originalTime:
+          reminder.originalTime ||
+          reminderTime,
       },
     );
 
     refreshRecords();
+
+    try {
+      await flushPendingRemoteSync();
+    } catch (error) {
+      window.alert(
+        error.message ||
+          'La toma quedó marcada como omitida en este dispositivo, pero no se pudo guardar en la nube. Revisá la conexión y volvé a intentarlo.',
+      );
+    }
   }
 
   function handlePostpone(reminder) {

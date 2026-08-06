@@ -70,8 +70,12 @@ function MedicationHistoryPage() {
   );
 
   const statistics = useMemo(
-    () => calculateHistoryStats(history),
-    [history],
+    () =>
+      calculateHistoryStats(
+        history,
+        treatments,
+      ),
+    [history, treatments],
   );
 
   const treatmentOptions = useMemo(() => {
@@ -305,10 +309,10 @@ function MedicationHistoryPage() {
 
           <div>
             <strong>
-              {statistics.adherencePercentage}%
+              {statistics.progressPercentage}%
             </strong>
 
-            <span>Administradas del total</span>
+            <span>Tratamiento completado</span>
           </div>
         </article>
       </section>
