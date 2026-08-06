@@ -872,33 +872,531 @@
     width: 100%;
   }
 }
-/* AVISO COMPACTO DE RESPONSABLE DUPLICADO */
 
-.caregivers-modal--compact-alert {
-  padding: 18px;
+.invitation-page {
+  display: grid;
+  min-height: 100vh;
+  padding: 28px 18px;
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(50, 127, 145, 0.16),
+      transparent 36%
+    ),
+    #f4f8fb;
+  place-items: center;
 }
 
-.caregivers-modal--compact-alert .caregivers-modal__backdrop {
-  background: rgba(23, 37, 49, 0.42);
-  backdrop-filter: blur(2px);
+.invitation-card {
+  width: min(100%, 620px);
+  padding: 30px;
+  border: 1px solid #dce6ec;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow:
+    0 22px 60px
+    rgba(32, 48, 71, 0.12);
 }
 
-.caregivers-modal__container--duplicate {
-  position: relative;
-  width: min(100%, 360px);
-  max-height: none;
+.invitation-card__header {
+  display: flex;
   align-items: center;
-  padding: 28px 24px 24px;
-  border: 1px solid #e1e9ee;
-  border-radius: 20px;
-  box-shadow: 0 20px 55px rgba(23, 37, 49, 0.2);
+  gap: 15px;
+  margin-bottom: 22px;
+}
+
+.invitation-card__logo {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  border-radius: 18px;
+  background:
+    linear-gradient(
+      145deg,
+      #3b8fa1,
+      #286e7e
+    );
+  color: #ffffff;
+  font-size: 1.4rem;
+  place-items: center;
+}
+
+.invitation-card__header small {
+  color: #327f91;
+  font-size: 0.64rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.invitation-card__header h1 {
+  margin: 4px 0;
+  color: #293d50;
+  font-size: 1.45rem;
+}
+
+.invitation-card__header p {
+  margin: 0;
+  color: #7b8997;
+  font-size: 0.75rem;
+}
+
+.invitation-family {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+  padding: 16px;
+  border: 1px solid #cfe3e7;
+  border-radius: 16px;
+  background: #eef8fa;
+}
+
+.invitation-family > span {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: #d9eef1;
+  color: #327f91;
+  place-items: center;
+}
+
+.invitation-family > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.invitation-family small {
+  color: #738793;
+  font-size: 0.61rem;
+}
+
+.invitation-family strong {
+  margin-top: 3px;
+  color: #315264;
+  font-size: 0.79rem;
+}
+
+.invitation-person {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 11px;
+  margin-bottom: 15px;
+}
+
+.invitation-person > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 13px;
+  border-radius: 13px;
+  background: #f5f8f9;
+}
+
+.invitation-person span {
+  color: #8996a1;
+  font-size: 0.59rem;
+}
+
+.invitation-person strong {
+  overflow-wrap: anywhere;
+  margin-top: 4px;
+  color: #40586b;
+  font-size: 0.7rem;
+}
+
+.invitation-permissions {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-bottom: 20px;
+  padding: 15px;
+  border: 1px solid #cce5d2;
+  border-radius: 14px;
+  background: #eff8f1;
+  color: #477b55;
+}
+
+.invitation-permissions > i {
+  margin-top: 2px;
+  font-size: 1.15rem;
+}
+
+.invitation-permissions strong {
+  font-size: 0.72rem;
+}
+
+.invitation-permissions p {
+  margin: 4px 0 0;
+  font-size: 0.65rem;
+  line-height: 1.55;
+}
+
+.invitation-error {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 17px;
+  padding: 13px 15px;
+  border: 1px solid #efcece;
+  border-radius: 13px;
+  background: #fff1f1;
+  color: #a84646;
+  font-size: 0.7rem;
+}
+
+.invitation-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.invitation-form label {
+  display: block;
+  margin-bottom: 7px;
+  color: #536779;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.invitation-form .form-control {
+  min-height: 47px;
+  border-color: #dce6ec;
+  border-radius: 12px;
+  color: #374d60;
+  font-size: 0.77rem;
+}
+
+.invitation-form .btn {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+  border-radius: 13px;
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.invitation-card__footer {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #e8eef1;
+  color: #80909d;
+}
+
+.invitation-card__footer p {
+  margin: 0;
+  font-size: 0.63rem;
+  line-height: 1.55;
+}
+
+.invitation-card--state {
   text-align: center;
 }
 
-.caregivers-duplicate-alert__close {
+.invitation-card--state h1 {
+  margin: 13px 0 7px;
+  color: #304559;
+  font-size: 1.45rem;
+}
+
+.invitation-card--state p {
+  margin: 0 0 20px;
+  color: #7e8d99;
+  font-size: 0.75rem;
+}
+
+.invitation-card--state .btn {
+  min-height: 45px;
+  border-radius: 12px;
+}
+
+.invitation-state-icon {
+  display: grid;
+  width: 65px;
+  height: 65px;
+  margin: 0 auto;
+  border-radius: 20px;
+  font-size: 1.6rem;
+  place-items: center;
+}
+
+.invitation-state-icon--error {
+  background: #fff0e8;
+  color: #b66a2c;
+}
+
+@media (max-width: 560px) {
+  .invitation-card {
+    padding: 21px;
+  }
+
+  .invitation-card__header {
+    align-items: flex-start;
+  }
+
+  .invitation-person {
+    grid-template-columns: 1fr;
+  }
+}
+/* Acceso limitado para responsables de tomas */
+.caregiver-form__access-level {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color, #d9e5ea);
+  border-radius: 1rem;
+  background: #f8fbfc;
+}
+
+.caregiver-form__access-level-header {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.caregiver-form__access-level-header small {
+  color: #718096;
+}
+
+.caregiver-form__access-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.9rem;
+  border: 1px solid #d9e5ea;
+  border-radius: 0.9rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.caregiver-form__access-choice.is-selected {
+  border-color: #3a90a4;
+  background: #edf8fa;
+}
+
+.caregiver-form__access-choice > i {
+  margin-top: 0.1rem;
+  color: #338ca1;
+  font-size: 1.25rem;
+}
+
+.caregiver-form__access-choice span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.caregiver-form__access-choice small {
+  color: #718096;
+}
+
+/* =========================================================
+   Ajustes de la versión actual de responsables
+   ========================================================= */
+
+.caregivers-feedback {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 13px 15px;
+  border: 1px solid #cfe5d5;
+  border-radius: 13px;
+  background: #eff8f1;
+  color: #477b55;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.caregivers-feedback--error {
+  border-color: #efcece;
+  background: #fff1f1;
+  color: #a84646;
+}
+
+.caregiver-form__access-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 13px 15px;
+  border: 1px solid #d8e8ec;
+  border-radius: 13px;
+  background: #f1f8f9;
+  color: #55727f;
+}
+
+.caregiver-form__access-message i {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: #327f91;
+}
+
+.caregiver-form__access-message p {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.55;
+}
+
+.caregiver-detail__access {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px;
+  border-radius: 13px;
+  background: #f3f8f9;
+}
+
+.caregiver-detail__access strong {
+  color: #38586a;
+  font-size: 0.75rem;
+}
+
+.caregiver-detail__access span {
+  color: #7d8d99;
+  font-size: 0.65rem;
+  line-height: 1.5;
+}
+
+.caregivers-modal__container--invitation {
+  width: min(100%, 640px);
+}
+
+.caregiver-invitation {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.caregiver-invitation__icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 14px;
+  border-radius: 15px;
+  background: #e8f4f6;
+  color: #327f91;
+  font-size: 1.3rem;
+  place-items: center;
+}
+
+.caregiver-invitation h3 {
+  margin: 0;
+  color: #30485a;
+  font-size: 1.2rem;
+}
+
+.caregiver-invitation > p {
+  margin: 10px 0 18px;
+  color: #6f808d;
+  font-size: 0.78rem;
+  line-height: 1.65;
+}
+
+.caregiver-invitation__link {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px;
+}
+
+.caregiver-invitation__link input {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #d7e2e7;
+  border-radius: 11px;
+  background: #f8fbfc;
+  color: #415767;
+  font-size: 0.72rem;
+}
+
+.caregiver-invitation__link button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 11px;
+  background: #e8f3f5;
+  color: #2f7888;
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.caregiver-invitation__expiration {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  color: #6e818e;
+  font-size: 0.69rem;
+}
+
+.caregiver-invitation__expiration i {
+  color: #327f91;
+}
+
+/* Aviso duplicado independiente del modal principal.
+   No hereda alto, ancho ni flex del formulario. */
+.caregiver-duplicate-dialog {
+  position: fixed;
+  z-index: 5000;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  box-sizing: border-box;
+}
+
+.caregiver-duplicate-dialog__backdrop {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: rgba(23, 37, 49, 0.46);
+  backdrop-filter: blur(2px);
+}
+
+.caregiver-duplicate-dialog__card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(360px, calc(100vw - 36px));
+  height: auto;
+  min-height: 0;
+  max-height: calc(100svh - 36px);
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-y: auto;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 28px 24px 24px;
+  border: 1px solid #e1e9ee;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 20px 55px rgba(23, 37, 49, 0.22);
+  text-align: center;
+}
+
+.caregiver-duplicate-dialog__close {
+  position: absolute;
+  top: 11px;
+  right: 11px;
   display: grid;
   width: 32px;
   height: 32px;
@@ -909,99 +1407,108 @@
   place-items: center;
 }
 
-.caregivers-duplicate-alert__icon {
+.caregiver-duplicate-dialog__icon {
   display: grid;
-  width: 54px;
-  height: 54px;
-  margin-bottom: 15px;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  margin-bottom: 14px;
   border-radius: 16px;
   background: #fff1e7;
   color: #b96832;
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   place-items: center;
 }
 
-.caregivers-modal__container--duplicate h2 {
+.caregiver-duplicate-dialog__card h2 {
   margin: 0;
   color: #293d50;
-  font-size: 1.08rem;
+  font-size: 1.05rem;
   line-height: 1.35;
 }
 
-.caregivers-modal__container--duplicate p {
-  margin: 9px 0 20px;
+.caregiver-duplicate-dialog__card p {
+  margin: 8px 0 18px;
   color: #718392;
-  font-size: 0.78rem;
-  line-height: 1.55;
+  font-size: 0.76rem;
+  line-height: 1.5;
 }
 
-.caregivers-duplicate-alert__button {
-  min-width: 140px;
+.caregiver-duplicate-dialog__button {
+  width: auto;
+  min-width: 132px;
+  min-height: 42px;
+  flex: 0 0 auto;
   justify-content: center;
 }
 
-@media (max-width: 480px) {
-  .caregivers-modal__container--duplicate {
-    width: min(100%, 330px);
-    padding: 25px 20px 21px;
+@media (max-width: 560px) {
+  .caregiver-form__access-level {
+    padding: 13px;
+  }
+
+  .caregiver-form__access-choice {
+    gap: 11px;
+    padding: 13px;
+  }
+
+  .caregiver-form__access-choice input {
+    flex: 0 0 auto;
+    margin-top: 3px;
+  }
+
+  .caregiver-form__access-choice > i {
+    flex: 0 0 auto;
+  }
+
+  .caregiver-form__access-choice span {
+    min-width: 0;
+  }
+
+  .caregiver-form__access-choice strong,
+  .caregiver-form__access-choice small {
+    display: block;
+  }
+
+  .caregiver-invitation__link {
+    grid-template-columns: 1fr;
+  }
+
+  .caregiver-invitation__link button {
+    width: 100%;
+  }
+
+  .caregiver-duplicate-dialog {
+    padding: 14px;
+  }
+
+  .caregiver-duplicate-dialog__card {
+    width: min(330px, calc(100vw - 28px));
+    max-height: calc(100svh - 28px);
+    padding: 25px 19px 20px;
     border-radius: 18px;
   }
 
-  .caregivers-duplicate-alert__button {
-    width: auto;
-  }
-}
-
-/* AJUSTE DEFINITIVO DEL AVISO DUPLICADO EN TELÉFONOS */
-.caregivers-modal--compact-alert {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
-}
-
-.caregivers-modal--compact-alert .caregivers-modal__container--duplicate {
-  width: min(100%, 360px);
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: calc(100dvh - 36px) !important;
-  flex: 0 0 auto !important;
-  align-self: center;
-  justify-self: center;
-  overflow: visible;
-}
-
-@media (max-width: 480px) {
-  .caregivers-modal--compact-alert {
-    padding: 16px;
-  }
-
-  .caregivers-modal--compact-alert .caregivers-modal__container--duplicate {
-    width: min(100%, 320px);
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: calc(100dvh - 32px) !important;
-    padding: 24px 18px 20px;
-    border-radius: 18px;
-  }
-
-  .caregivers-duplicate-alert__icon {
+  .caregiver-duplicate-dialog__icon {
     width: 48px;
     height: 48px;
-    margin-bottom: 13px;
+    flex-basis: 48px;
+    margin-bottom: 12px;
     border-radius: 14px;
-    font-size: 1.3rem;
+    font-size: 1.25rem;
   }
 
-  .caregivers-modal__container--duplicate h2 {
-    font-size: 1rem;
+  .caregiver-duplicate-dialog__card h2 {
+    font-size: 0.98rem;
   }
 
-  .caregivers-modal__container--duplicate p {
-    margin: 8px 0 17px;
-    font-size: 0.74rem;
+  .caregiver-duplicate-dialog__card p {
+    margin-bottom: 16px;
+    font-size: 0.72rem;
   }
 
-  .caregivers-duplicate-alert__button {
-    min-width: 125px;
+  .caregiver-duplicate-dialog__button {
     width: auto !important;
+    min-width: 124px;
   }
 }

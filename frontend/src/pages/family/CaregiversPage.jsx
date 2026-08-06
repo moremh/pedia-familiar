@@ -1274,7 +1274,7 @@ ${invitationShare.url}`,
 
       {isDuplicateAlertOpen && (
         <div
-          className="caregivers-modal caregivers-modal--compact-alert"
+          className="caregiver-duplicate-dialog"
           role="alertdialog"
           aria-modal="true"
           aria-labelledby="duplicateCaregiverTitle"
@@ -1282,17 +1282,17 @@ ${invitationShare.url}`,
         >
           <button
             type="button"
-            className="caregivers-modal__backdrop"
+            className="caregiver-duplicate-dialog__backdrop"
             onClick={() =>
               setIsDuplicateAlertOpen(false)
             }
             aria-label="Cerrar aviso"
           />
 
-          <div className="caregivers-modal__container caregivers-modal__container--duplicate">
+          <section className="caregiver-duplicate-dialog__card">
             <button
               type="button"
-              className="caregivers-duplicate-alert__close"
+              className="caregiver-duplicate-dialog__close"
               onClick={() =>
                 setIsDuplicateAlertOpen(false)
               }
@@ -1301,7 +1301,7 @@ ${invitationShare.url}`,
               <i className="bi bi-x-lg" />
             </button>
 
-            <span className="caregivers-duplicate-alert__icon">
+            <span className="caregiver-duplicate-dialog__icon">
               <i className="bi bi-person-exclamation" />
             </span>
 
@@ -1315,14 +1315,14 @@ ${invitationShare.url}`,
 
             <button
               type="button"
-              className="btn btn-primary caregivers-duplicate-alert__button"
+              className="btn btn-primary caregiver-duplicate-dialog__button"
               onClick={() =>
                 setIsDuplicateAlertOpen(false)
               }
             >
               Entendido
             </button>
-          </div>
+          </section>
         </div>
       )}
 
