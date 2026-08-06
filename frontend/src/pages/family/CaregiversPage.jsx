@@ -308,6 +308,11 @@ function CaregiversPage() {
     setFormError,
   ] = useState('');
 
+  const [
+    isDuplicateAlertOpen,
+    setIsDuplicateAlertOpen,
+  ] = useState(false);
+
   const caregiverStatsMap =
     useMemo(
       () =>
@@ -456,6 +461,7 @@ function CaregiversPage() {
     setIsFormOpen(true);
     setFeedback(null);
     setFormError('');
+    setIsDuplicateAlertOpen(false);
   }
 
   function openEditForm(
@@ -468,12 +474,14 @@ function CaregiversPage() {
     setIsFormOpen(true);
     setFeedback(null);
     setFormError('');
+    setIsDuplicateAlertOpen(false);
   }
 
   function closeForm() {
     setEditingCaregiver(null);
     setIsFormOpen(false);
     setFormError('');
+    setIsDuplicateAlertOpen(false);
   }
 
   async function handleSaveCaregiver(
@@ -492,6 +500,8 @@ function CaregiversPage() {
       setFormError(
         DUPLICATE_CAREGIVER_MESSAGE,
       );
+
+      setIsDuplicateAlertOpen(true);
 
       return;
     }
@@ -584,6 +594,7 @@ function CaregiversPage() {
         errorMessage ===
         DUPLICATE_CAREGIVER_MESSAGE
       ) {
+        setIsDuplicateAlertOpen(true);
         refreshCaregivers();
       }
     }
@@ -1257,6 +1268,82 @@ ${invitationShare.url}`,
                 }
               />
             </div>
+          </div>
+        </div>
+      )}
+
+      {isDuplicateAlertOpen && (
+        <div
+          className="caregivers-modal"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="duplicateCaregiverTitle"
+          aria-describedby="duplicateCaregiverDescription"
+        >
+          <button
+            type="button"
+            className="caregivers-modal__backdrop"
+            onClick={() =>
+              setIsDuplicateAlertOpen(false)
+            }
+            aria-label="Cerrar aviso"
+          />
+
+          <div
+            className="caregivers-modal__container caregivers-modal__container--invitation"
+            style={{ maxWidth: '440px' }}
+          >
+            <header className="caregivers-modal__header">
+              <div>
+                <span>
+                  Responsable existente
+                </span>
+
+                <h2 id="duplicateCaregiverTitle">
+                  Este responsable ya existe
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setIsDuplicateAlertOpen(false)
+                }
+                aria-label="Cerrar"
+              >
+                <i className="bi bi-x-lg" />
+              </button>
+            </header>
+
+            <div className="caregivers-modal__body">
+              <section className="caregiver-invitation">
+                <span className="caregiver-invitation__icon">
+                  <i className="bi bi-exclamation-triangle" />
+                </span>
+
+                <h3>
+                  Responsable ya registrado
+                </h3>
+
+                <p id="duplicateCaregiverDescription">
+                  Ese responsable ya existe en esta familia.
+                  Revisá la lista de responsables antes de
+                  intentar agregarlo nuevamente.
+                </p>
+              </section>
+            </div>
+
+            <footer className="caregivers-modal__footer">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() =>
+                  setIsDuplicateAlertOpen(false)
+                }
+              >
+                Entendido
+              </button>
+            </footer>
           </div>
         </div>
       )}
