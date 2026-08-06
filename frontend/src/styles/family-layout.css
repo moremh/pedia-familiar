@@ -1289,44 +1289,34 @@
     font-size: 0.9rem;
   }
 }
+
 /* =========================================================
-   CORRECCIÓN DEL ENCABEZADO EN TELÉFONOS
-   - Oculta el texto "Panel familiar".
-   - Mantiene los controles en la primera fila.
-   - Muestra el nombre completo de la pestaña en una segunda fila.
+   ENCABEZADO COMPACTO EN TELÉFONOS
+   - Oculta "Panel familiar".
+   - Mantiene el nombre de la pestaña en la misma fila.
+   - Acorta "días restantes" a "días rest.".
    ========================================================= */
 
 @media (max-width: 680px) {
   .family-navbar {
-    display: grid;
-    min-height: auto;
-    grid-template-columns: auto minmax(0, 1fr);
+    display: flex;
+    min-height: 64px;
     align-items: center;
-    gap: 8px 10px;
-    padding: 10px 14px 12px;
+    gap: 6px;
+    padding: 8px 10px;
   }
 
   .family-navbar__left {
-    display: contents;
-  }
-
-  .family-navbar__menu-button {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .family-navbar__actions {
+    display: flex;
     min-width: 0;
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: end;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 7px;
   }
 
   .family-navbar__left > div {
-    width: 100%;
     min-width: 0;
-    grid-column: 1 / -1;
-    grid-row: 2;
+    flex: 1 1 auto;
   }
 
   .family-navbar__eyebrow {
@@ -1334,12 +1324,97 @@
   }
 
   .family-navbar__left h1 {
-    overflow: visible;
+    display: -webkit-box;
+    overflow: hidden;
     margin: 0;
-    font-size: 1.05rem;
-    line-height: 1.25;
+    font-size: clamp(0.78rem, 3.7vw, 0.95rem);
+    line-height: 1.08;
     text-overflow: clip;
     white-space: normal;
-    overflow-wrap: anywhere;
+    overflow-wrap: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .family-navbar__actions {
+    min-width: 0;
+    flex: 0 0 auto;
+    gap: 4px;
+  }
+
+  .family-navbar__trial {
+    min-height: 38px;
+    flex: 0 0 auto;
+    gap: 0;
+    padding: 5px 7px;
+    border-radius: 12px;
+  }
+
+  .family-navbar__trial > i,
+  .family-navbar__trial small {
+    display: none;
+  }
+
+  .family-navbar__trial-description {
+    font-size: 0;
+    white-space: nowrap;
+  }
+
+  .family-navbar__trial-description::after {
+    content: attr(data-mobile-description);
+    font-size: 0.66rem;
+    font-weight: 750;
+    line-height: 1;
+  }
+
+  .family-navbar__menu-button,
+  .family-navbar__icon-button,
+  .family-navbar__profile-avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .family-navbar__menu-button,
+  .family-navbar__icon-button {
+    border-radius: 12px;
+  }
+
+  .family-navbar__profile {
+    min-height: 38px;
+    padding: 0;
+  }
+}
+
+@media (max-width: 390px) {
+  .family-navbar {
+    gap: 4px;
+    padding-inline: 8px;
+  }
+
+  .family-navbar__left {
+    gap: 5px;
+  }
+
+  .family-navbar__actions {
+    gap: 3px;
+  }
+
+  .family-navbar__trial {
+    padding-inline: 6px;
+  }
+
+  .family-navbar__trial-description::after {
+    font-size: 0.61rem;
+  }
+
+  .family-navbar__menu-button,
+  .family-navbar__icon-button,
+  .family-navbar__profile-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .family-navbar__profile {
+    min-height: 36px;
   }
 }

@@ -18,10 +18,6 @@ import {
   getFamilyExpirationDate,
 } from '../../services/subscriptionService.js';
 
-import {
-  isMedicationOnlyAccess,
-} from '../../services/familyAccessService.js';
-
 const pageTitles = {
   '/dashboard': 'Inicio',
   '/dashboard/children':
@@ -163,8 +159,6 @@ function getSubscriptionDisplay(
 function FamilyNavbar({
   onMenuClick,
 }) {
-  const limitedAccess =
-    isMedicationOnlyAccess();
   const location =
     useLocation();
 
@@ -233,6 +227,17 @@ function FamilyNavbar({
       family,
     );
 
+  const mobileSubscriptionDescription =
+    subscriptionDisplay.description
+      .replace(
+        'día restante',
+        'día rest.',
+      )
+      .replace(
+        'días restantes',
+        'días rest.',
+      );
+
   return (
     <header className="family-navbar">
       <div className="family-navbar__left">
@@ -247,9 +252,7 @@ function FamilyNavbar({
 
         <div>
           <span className="family-navbar__eyebrow">
-            {limitedAccess
-              ? 'Administración de tomas'
-              : 'Panel familiar'}
+            Panel familiar
           </span>
 
           <h1>
@@ -269,7 +272,12 @@ function FamilyNavbar({
               }
             </small>
 
-            <strong>
+            <strong
+              className="family-navbar__trial-description"
+              data-mobile-description={
+                mobileSubscriptionDescription
+              }
+            >
               {
                 subscriptionDisplay.description
               }
@@ -277,37 +285,29 @@ function FamilyNavbar({
           </span>
         </div>
 
-        {!limitedAccess && (
-          <button
-            type="button"
-            className="family-navbar__icon-button"
-            aria-label="Ver alertas"
-            onClick={() =>
-              navigate(
-                '/dashboard/alerts',
-              )
-            }
-          >
-            <i className="bi bi-bell" />
-            <span className="family-navbar__notification-dot" />
-          </button>
-        )}
+        <button
+          type="button"
+          className="family-navbar__icon-button"
+          aria-label="Ver alertas"
+          onClick={() =>
+            navigate(
+              '/dashboard/alerts',
+            )
+          }
+        >
+          <i className="bi bi-bell" />
+          <span className="family-navbar__notification-dot" />
+        </button>
 
         <button
           type="button"
           className="family-navbar__profile"
-          aria-label={
-            limitedAccess
-              ? 'Perfil del responsable'
-              : 'Abrir configuración del perfil'
+          aria-label="Abrir configuración del perfil"
+          onClick={() =>
+            navigate(
+              '/dashboard/settings',
+            )
           }
-          onClick={() => {
-            if (!limitedAccess) {
-              navigate(
-                '/dashboard/settings',
-              );
-            }
-          }}
         >
           <span className="family-navbar__profile-avatar">
             {getInitials(
@@ -324,15 +324,11 @@ function FamilyNavbar({
             <small>
               {user?.role === 'owner'
                 ? 'Responsable principal'
-                : limitedAccess
-                  ? 'Responsable de tomas'
-                  : 'Responsable'}
+                : 'Responsable'}
             </small>
           </span>
 
-          {!limitedAccess && (
-            <i className="bi bi-chevron-right" />
-          )}
+          <i className="bi bi-chevron-right" />
         </button>
       </div>
     </header>
