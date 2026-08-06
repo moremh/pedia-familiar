@@ -12,6 +12,9 @@ const CAREGIVERS_STORAGE_KEY =
 const ACTIVE_CAREGIVER_STORAGE_KEY =
   'mipeque-active-caregiver';
 
+const DUPLICATE_CAREGIVER_MESSAGE =
+  'Ese responsable ya está unido a la familia.';
+
 function saveCaregivers(caregivers) {
   localStorage.setItem(
     CAREGIVERS_STORAGE_KEY,
@@ -73,10 +76,30 @@ function normalizeError(
     );
   }
 
+  const errorText = [
+    error.message,
+    error.details,
+    error.hint,
+    error.code,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   if (
-    String(
-      error.message || '',
-    ).includes(
+    errorText.includes(
+      'caregivers_no_duplicates_per_family',
+    ) ||
+    errorText.includes(
+      DUPLICATE_CAREGIVER_MESSAGE,
+    )
+  ) {
+    return new Error(
+      DUPLICATE_CAREGIVER_MESSAGE,
+    );
+  }
+
+  if (
+    errorText.includes(
       'caregivers_one_primary_per_family',
     )
   ) {
@@ -88,6 +111,136 @@ function normalizeError(
   return new Error(
     error.message || fallback,
   );
+}
+
+function normalizeIdentityText(value) {
+  return String(value || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
+function normalizeIdentityEmail(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase();
+}
+
+function normalizeIdentityPhone(value) {
+  return String(value || '')
+    .replace(/\D/g, '');
+}
+
+function isSameCaregiverIdentity(
+  existingCaregiver,
+  caregiverData,
+) {
+  const existingEmail =
+    normalizeIdentityEmail(
+      existingCaregiver.email,
+    );
+
+  const nextEmail =
+    normalizeIdentityEmail(
+      caregiverData.email,
+    );
+
+  const existingPhone =
+    normalizeIdentityPhone(
+      existingCaregiver.phone,
+    );
+
+  const nextPhone =
+    normalizeIdentityPhone(
+      caregiverData.phone,
+    );
+
+  const hasSameEmail =
+    Boolean(nextEmail) &&
+    existingEmail === nextEmail;
+
+  const hasSameName =
+    normalizeIdentityText(
+      existingCaregiver.full_name,
+    ) ===
+    normalizeIdentityText(
+      caregiverData.fullName,
+    );
+
+  const hasSameNameAndPhone =
+    hasSameName &&
+    Boolean(nextPhone) &&
+    existingPhone === nextPhone;
+
+  const hasSameCompleteData =
+    hasSameName &&
+    String(
+      existingCaregiver.relationship ||
+        'other',
+    ) ===
+      String(
+        caregiverData.relationship ||
+          'other',
+      ) &&
+    existingEmail === nextEmail &&
+    existingPhone === nextPhone;
+
+  return (
+    hasSameEmail ||
+    hasSameNameAndPhone ||
+    hasSameCompleteData
+  );
+}
+
+async function assertCaregiverIsNotDuplicated(
+  client,
+  familyId,
+  caregiverData,
+  excludedCaregiverId = '',
+) {
+  let query = client
+    .from('caregivers')
+    .select(
+      'id, full_name, relationship, phone, email',
+    )
+    .eq(
+      'family_id',
+      familyId,
+    );
+
+  if (excludedCaregiverId) {
+    query = query.neq(
+      'id',
+      excludedCaregiverId,
+    );
+  }
+
+  const {
+    data,
+    error,
+  } = await query;
+
+  if (error) {
+    throw normalizeError(
+      error,
+      'No se pudo comprobar si el responsable ya existe.',
+    );
+  }
+
+  const duplicated = (
+    data || []
+  ).some((existingCaregiver) =>
+    isSameCaregiverIdentity(
+      existingCaregiver,
+      caregiverData,
+    ),
+  );
+
+  if (duplicated) {
+    throw new Error(
+      DUPLICATE_CAREGIVER_MESSAGE,
+    );
+  }
 }
 
 async function fetchAndCacheCaregivers() {
@@ -307,6 +460,12 @@ export async function createCaregiver(
   const client =
     requireSupabase();
 
+  await assertCaregiverIsNotDuplicated(
+    client,
+    familyId,
+    caregiverData,
+  );
+
   const caregivers =
     getCaregivers();
 
@@ -458,6 +617,13 @@ export async function updateCaregiver(
 
   const client =
     requireSupabase();
+
+  await assertCaregiverIsNotDuplicated(
+    client,
+    familyId,
+    caregiverData,
+    caregiverId,
+  );
 
   const shouldBePrimary =
     caregiverData
