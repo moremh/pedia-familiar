@@ -58,7 +58,13 @@ function SettingsPage() {
   const [message, setMessage] =
     useState(null);
 
+  const [isExporting, setIsExporting] =
+    useState(false);
+
   const [isImporting, setIsImporting] =
+    useState(false);
+
+  const [isDeleting, setIsDeleting] =
     useState(false);
 
   const [dataCounts] = useState(() => ({
@@ -205,13 +211,25 @@ function SettingsPage() {
     );
   }
 
-  function handleExportBackup() {
-    downloadFamilyBackup();
+  async function handleExportBackup() {
+    setIsExporting(true);
 
-    showMessage(
-      'success',
-      'La copia de seguridad se descargó correctamente.',
-    );
+    try {
+      await downloadFamilyBackup();
+
+      showMessage(
+        'success',
+        'La copia de seguridad se descargó correctamente.',
+      );
+    } catch (error) {
+      showMessage(
+        'error',
+        error.message ||
+          'No se pudo crear la copia de seguridad.',
+      );
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   function openImportSelector() {
@@ -227,14 +245,24 @@ function SettingsPage() {
       return;
     }
 
-    if (
-      !file.name.toLowerCase().endsWith(
+    const normalizedFileName =
+      file.name.toLowerCase();
+
+    const isSupportedBackup =
+      normalizedFileName.endsWith(
+        '.html',
+      ) ||
+      normalizedFileName.endsWith(
         '.json',
-      )
-    ) {
+      ) ||
+      normalizedFileName.endsWith(
+        '.mipeque',
+      );
+
+    if (!isSupportedBackup) {
       showMessage(
         'error',
-        'Seleccioná un archivo JSON.',
+        'Seleccioná una copia de seguridad de MiPeque.',
       );
 
       return;
@@ -254,7 +282,9 @@ function SettingsPage() {
       const content = await file.text();
 
       const restoredItems =
-        importFamilyBackup(content);
+        await importFamilyBackup(
+          content,
+        );
 
       window.alert(
         `Se restauraron ${restoredItems} grupos de datos. La página se recargará para aplicar los cambios.`,
@@ -272,10 +302,10 @@ function SettingsPage() {
     }
   }
 
-  function handleDeleteAllData() {
+  async function handleDeleteAllData() {
     const firstConfirmation =
       window.confirm(
-        'Esta acción eliminará hijos, tratamientos, recordatorios, documentos, vacunas, responsables y preferencias guardadas en este navegador. ¿Querés continuar?',
+        'Esta acción eliminará de MiPeque los hijos, consultas, tratamientos, tomas, vacunas, documentos y medicamentos del botiquín. La cuenta, la suscripción y los responsables se conservarán. ¿Querés continuar?',
       );
 
     if (!firstConfirmation) {
@@ -299,13 +329,31 @@ function SettingsPage() {
       return;
     }
 
-    clearAllFamilyData();
+    setIsDeleting(true);
 
-    window.alert(
-      'Todos los datos locales fueron eliminados. La página se recargará.',
-    );
+    try {
+      const deletionResult =
+        await clearAllFamilyData();
 
-    window.location.reload();
+      const cleanupMessage =
+        deletionResult.fileCleanupWarning
+          ? `\n\nAviso: ${deletionResult.fileCleanupWarning}`
+          : '';
+
+      window.alert(
+        `Los datos familiares fueron eliminados correctamente. La cuenta, la suscripción y los responsables se conservaron.${cleanupMessage}`,
+      );
+
+      window.location.reload();
+    } catch (error) {
+      showMessage(
+        'error',
+        error.message ||
+          'No se pudieron eliminar los datos familiares.',
+      );
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   const activeCaregivers =
@@ -739,8 +787,8 @@ function SettingsPage() {
             <h3>Datos guardados</h3>
 
             <p>
-              Resumen de la información almacenada
-              actualmente en este navegador.
+              Resumen de la información guardada
+              actualmente en MiPeque.
             </p>
           </div>
         </header>
@@ -810,8 +858,8 @@ function SettingsPage() {
             <h3>Copia de seguridad</h3>
 
             <p>
-              Exportá o restaurá los datos locales
-              de MiPeque.
+              Creá una copia fácil de reconocer y
+              restaurala cuando la necesites.
             </p>
           </div>
         </header>
@@ -828,8 +876,8 @@ function SettingsPage() {
               </strong>
 
               <p>
-                Descarga un archivo JSON con todos
-                los registros guardados.
+                Descarga un archivo que podés abrir en
+                cualquier navegador y volver a cargar en MiPeque.
               </p>
             </div>
 
@@ -837,8 +885,11 @@ function SettingsPage() {
               type="button"
               className="btn btn-outline-primary"
               onClick={handleExportBackup}
+              disabled={isExporting}
             >
-              Descargar copia
+              {isExporting
+                ? 'Preparando copia...'
+                : 'Descargar copia'}
             </button>
           </article>
 
@@ -872,7 +923,7 @@ function SettingsPage() {
             <input
               ref={importInputRef}
               type="file"
-              accept=".json,application/json"
+              accept=".html,.json,.mipeque,text/html,application/json"
               hidden
               onChange={handleImportBackup}
             />
@@ -890,9 +941,9 @@ function SettingsPage() {
             <h3>Eliminar todos los datos</h3>
 
             <p>
-              Borra definitivamente toda la
-              información de MiPeque guardada
-              en este navegador.
+              Borra los datos médicos y familiares,
+              pero conserva la cuenta, la suscripción
+              y los responsables con acceso.
             </p>
           </div>
         </div>
@@ -901,9 +952,12 @@ function SettingsPage() {
           type="button"
           className="btn btn-outline-danger"
           onClick={handleDeleteAllData}
+          disabled={isDeleting}
         >
           <i className="bi bi-trash3" />
-          Eliminar información
+          {isDeleting
+            ? 'Eliminando datos...'
+            : 'Eliminar información'}
         </button>
       </section>
     </div>
