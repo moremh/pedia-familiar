@@ -272,14 +272,15 @@ function FamilyNavbar({
               }
             </small>
 
-            <strong
-              className="family-navbar__trial-description"
-              data-mobile-description={
-                mobileSubscriptionDescription
-              }
-            >
+            <strong className="family-navbar__trial-description family-navbar__trial-description--desktop">
               {
                 subscriptionDisplay.description
+              }
+            </strong>
+
+            <strong className="family-navbar__trial-description family-navbar__trial-description--mobile">
+              {
+                mobileSubscriptionDescription
               }
             </strong>
           </span>

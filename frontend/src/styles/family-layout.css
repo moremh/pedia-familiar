@@ -286,6 +286,10 @@
   font-size: 0.78rem;
 }
 
+.family-navbar__trial-description--mobile {
+  display: none;
+}
+
 .family-navbar__icon-button {
   position: relative;
   display: grid;
@@ -1355,16 +1359,16 @@
     display: none;
   }
 
-  .family-navbar__trial-description {
-    font-size: 0;
-    white-space: nowrap;
+  .family-navbar__trial-description--desktop {
+    display: none;
   }
 
-  .family-navbar__trial-description::after {
-    content: attr(data-mobile-description);
+  .family-navbar__trial-description--mobile {
+    display: inline;
     font-size: 0.66rem;
     font-weight: 750;
     line-height: 1;
+    white-space: nowrap;
   }
 
   .family-navbar__menu-button,
@@ -1403,7 +1407,7 @@
     padding-inline: 6px;
   }
 
-  .family-navbar__trial-description::after {
+  .family-navbar__trial-description--mobile {
     font-size: 0.61rem;
   }
 
