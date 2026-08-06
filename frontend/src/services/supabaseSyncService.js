@@ -1236,40 +1236,67 @@ function cabinetToRow(item, familyId) {
 }
 
 async function syncSettings(client, familyId) {
-  const settings = readJson(STORAGE_KEYS.settings, {});
+  const settings = readJson(
+    STORAGE_KEYS.settings,
+    {},
+  );
 
-  if (settings.familyName) {
-    const { error: familyError } = await client
-      .from('families')
-      .update({ family_name: settings.familyName.trim() })
-      .eq('id', familyId);
-
-    if (familyError) {
-      throw new Error(familyError.message || 'No se pudo actualizar la familia.');
-    }
-  }
-
-  const row = {
-    family_id: familyId,
-    contact_name: settings.contactName || '',
-    contact_email: settings.contactEmail || '',
-    phone: settings.phone || '',
-    default_caregiver_id: nullable(settings.defaultCaregiverId),
-    reminder_advance_minutes: Number(settings.reminderAdvanceMinutes ?? 15),
-    expiration_warning_days: Number(settings.expirationWarningDays ?? 30),
-    vaccine_warning_days: Number(settings.vaccineWarningDays ?? 30),
-    show_overdue_alerts: settings.showOverdueAlerts ?? true,
-    show_stock_alerts: settings.showStockAlerts ?? true,
-    show_expiration_alerts: settings.showExpirationAlerts ?? true,
-    show_vaccine_alerts: settings.showVaccineAlerts ?? true,
-  };
-
-  const { error } = await client.from('family_settings').upsert(row, {
-    onConflict: 'family_id',
-  });
+  const {
+    error,
+  } = await client.rpc(
+    'save_family_settings_secure',
+    {
+      p_family_id: familyId,
+      p_family_name:
+        String(
+          settings.familyName ||
+            'Mi familia',
+        ).trim(),
+      p_contact_name:
+        settings.contactName || '',
+      p_contact_email:
+        settings.contactEmail || '',
+      p_phone:
+        settings.phone || '',
+      p_default_caregiver_id:
+        nullable(
+          settings.defaultCaregiverId,
+        ),
+      p_reminder_advance_minutes:
+        Number(
+          settings.reminderAdvanceMinutes ??
+            15,
+        ),
+      p_expiration_warning_days:
+        Number(
+          settings.expirationWarningDays ??
+            30,
+        ),
+      p_vaccine_warning_days:
+        Number(
+          settings.vaccineWarningDays ??
+            30,
+        ),
+      p_show_overdue_alerts:
+        settings.showOverdueAlerts ??
+        true,
+      p_show_stock_alerts:
+        settings.showStockAlerts ??
+        true,
+      p_show_expiration_alerts:
+        settings.showExpirationAlerts ??
+        true,
+      p_show_vaccine_alerts:
+        settings.showVaccineAlerts ??
+        true,
+    },
+  );
 
   if (error) {
-    throw new Error(error.message || 'No se pudo guardar la configuración.');
+    throw new Error(
+      error.message ||
+        'No se pudo guardar la configuración familiar.',
+    );
   }
 }
 
