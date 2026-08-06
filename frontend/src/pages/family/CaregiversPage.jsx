@@ -646,6 +646,58 @@ function CaregiversPage() {
     }
   }
 
+  async function handleShareInvitation() {
+    if (
+      !invitationShare?.url
+    ) {
+      return;
+    }
+
+    const shareText =
+      `Hola ${invitationShare.caregiverName}, ` +
+      'te invitaron a compartir una familia en MiPeque. ' +
+      'Abrí este enlace para crear tu contraseña y aceptar la invitación:';
+
+    try {
+      if (
+        typeof navigator.share ===
+        'function'
+      ) {
+        await navigator.share({
+          title:
+            'Invitación a MiPeque',
+          text: shareText,
+          url:
+            invitationShare.url,
+        });
+
+        return;
+      }
+
+      await copyText(
+        `${shareText}
+${invitationShare.url}`,
+      );
+
+      showFeedback(
+        'success',
+        'La invitación fue copiada para compartir.',
+      );
+    } catch (error) {
+      if (
+        error?.name ===
+        'AbortError'
+      ) {
+        return;
+      }
+
+      showFeedback(
+        'error',
+        'No se pudo compartir la invitación.',
+      );
+    }
+  }
+
   const selectedHistory =
     selectedCaregiver
       ? caregiverStatsMap[
@@ -1075,14 +1127,15 @@ function CaregiversPage() {
                 </h3>
 
                 <p>
-                  Mandale este enlace a{' '}
+                  Compartí este enlace con{' '}
                   <strong>
                     {
                       invitationShare.email
                     }
                   </strong>
-                  . Podrá crear su contraseña y
-                  entrar a la misma familia.
+                  . La persona podrá crear su
+                  contraseña y entrar a la misma
+                  familia.
                 </p>
 
                 <div className="caregiver-invitation__link">
@@ -1119,16 +1172,6 @@ function CaregiversPage() {
                   </span>
                 </div>
 
-                <div className="caregiver-invitation__notice">
-                  <i className="bi bi-info-circle" />
-
-                  <p>
-                    Por ahora el enlace se comparte
-                    manualmente. Cuando conectemos
-                    Supabase, se enviará también por
-                    correo electrónico.
-                  </p>
-                </div>
               </section>
             </div>
 
@@ -1148,16 +1191,12 @@ function CaregiversPage() {
               <button
                 type="button"
                 className="btn btn-primary"
-                onClick={() =>
-                  window.open(
-                    invitationShare.url,
-                    '_blank',
-                    'noopener,noreferrer',
-                  )
+                onClick={
+                  handleShareInvitation
                 }
               >
-                <i className="bi bi-box-arrow-up-right" />
-                Abrir invitación
+                <i className="bi bi-share" />
+                Compartir invitación
               </button>
             </footer>
           </div>
