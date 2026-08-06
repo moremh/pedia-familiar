@@ -19,6 +19,10 @@ import {
   getSubscriptionAccessState,
 } from '../../services/subscriptionService.js';
 
+import {
+  getFamilyHomePath,
+} from '../../services/familyAccessService.js';
+
 import '../../styles/invitation.css';
 
 const statusInformation = {
@@ -203,7 +207,7 @@ function InvitationPage() {
 
       navigate(
         accessState.allowed
-          ? '/dashboard'
+          ? getFamilyHomePath()
           : '/subscription',
         {
           replace: true,

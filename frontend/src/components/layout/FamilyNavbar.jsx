@@ -18,6 +18,10 @@ import {
   getFamilyExpirationDate,
 } from '../../services/subscriptionService.js';
 
+import {
+  isMedicationOnlyAccess,
+} from '../../services/familyAccessService.js';
+
 const pageTitles = {
   '/dashboard': 'Inicio',
   '/dashboard/children':
@@ -159,6 +163,8 @@ function getSubscriptionDisplay(
 function FamilyNavbar({
   onMenuClick,
 }) {
+  const limitedAccess =
+    isMedicationOnlyAccess();
   const location =
     useLocation();
 
@@ -241,7 +247,9 @@ function FamilyNavbar({
 
         <div>
           <span className="family-navbar__eyebrow">
-            Panel familiar
+            {limitedAccess
+              ? 'Administración de tomas'
+              : 'Panel familiar'}
           </span>
 
           <h1>
@@ -269,29 +277,37 @@ function FamilyNavbar({
           </span>
         </div>
 
-        <button
-          type="button"
-          className="family-navbar__icon-button"
-          aria-label="Ver alertas"
-          onClick={() =>
-            navigate(
-              '/dashboard/alerts',
-            )
-          }
-        >
-          <i className="bi bi-bell" />
-          <span className="family-navbar__notification-dot" />
-        </button>
+        {!limitedAccess && (
+          <button
+            type="button"
+            className="family-navbar__icon-button"
+            aria-label="Ver alertas"
+            onClick={() =>
+              navigate(
+                '/dashboard/alerts',
+              )
+            }
+          >
+            <i className="bi bi-bell" />
+            <span className="family-navbar__notification-dot" />
+          </button>
+        )}
 
         <button
           type="button"
           className="family-navbar__profile"
-          aria-label="Abrir configuración del perfil"
-          onClick={() =>
-            navigate(
-              '/dashboard/settings',
-            )
+          aria-label={
+            limitedAccess
+              ? 'Perfil del responsable'
+              : 'Abrir configuración del perfil'
           }
+          onClick={() => {
+            if (!limitedAccess) {
+              navigate(
+                '/dashboard/settings',
+              );
+            }
+          }}
         >
           <span className="family-navbar__profile-avatar">
             {getInitials(
@@ -308,11 +324,15 @@ function FamilyNavbar({
             <small>
               {user?.role === 'owner'
                 ? 'Responsable principal'
-                : 'Responsable'}
+                : limitedAccess
+                  ? 'Responsable de tomas'
+                  : 'Responsable'}
             </small>
           </span>
 
-          <i className="bi bi-chevron-right" />
+          {!limitedAccess && (
+            <i className="bi bi-chevron-right" />
+          )}
         </button>
       </div>
     </header>

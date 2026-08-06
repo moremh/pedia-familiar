@@ -16,36 +16,35 @@ import {
   getFamilySettings,
 } from '../../services/familySettingsService.js';
 
-const navigationSections = [
+import {
+  getFamilyHomePath,
+  isMedicationOnlyAccess,
+} from '../../services/familyAccessService.js';
+
+const fullNavigationSections = [
   {
     title: 'Principal',
     items: [
       {
         label: 'Inicio',
         path: '/dashboard',
-        icon:
-          'bi-grid-1x2-fill',
+        icon: 'bi-grid-1x2-fill',
         end: true,
       },
       {
         label: 'Mis hijos',
-        path:
-          '/dashboard/children',
-        icon:
-          'bi-person-hearts',
+        path: '/dashboard/children',
+        icon: 'bi-person-hearts',
       },
       {
         label: 'Recordatorios',
-        path:
-          '/dashboard/reminders',
+        path: '/dashboard/reminders',
         icon: 'bi-bell',
       },
       {
         label: 'Tratamientos',
-        path:
-          '/dashboard/treatments',
-        icon:
-          'bi-capsule-pill',
+        path: '/dashboard/treatments',
+        icon: 'bi-capsule-pill',
       },
     ],
   },
@@ -54,37 +53,28 @@ const navigationSections = [
     items: [
       {
         label: 'Consultas',
-        path:
-          '/dashboard/consultations',
-        icon:
-          'bi-clipboard2-pulse',
+        path: '/dashboard/consultations',
+        icon: 'bi-clipboard2-pulse',
       },
       {
         label: 'Vacunas',
-        path:
-          '/dashboard/vaccines',
-        icon:
-          'bi-shield-plus',
+        path: '/dashboard/vaccines',
+        icon: 'bi-shield-plus',
       },
       {
         label: 'Botiquín',
-        path:
-          '/dashboard/medicine-cabinet',
+        path: '/dashboard/medicine-cabinet',
         icon: 'bi-box-seam',
       },
       {
         label: 'Documentos',
-        path:
-          '/dashboard/documents',
-        icon:
-          'bi-folder2-open',
+        path: '/dashboard/documents',
+        icon: 'bi-folder2-open',
       },
       {
         label: 'Historial',
-        path:
-          '/dashboard/history',
-        icon:
-          'bi-clock-history',
+        path: '/dashboard/history',
+        icon: 'bi-clock-history',
       },
     ],
   },
@@ -93,16 +83,31 @@ const navigationSections = [
     items: [
       {
         label: 'Responsables',
-        path:
-          '/dashboard/caregivers',
+        path: '/dashboard/caregivers',
         icon: 'bi-people',
       },
       {
         label: 'Alertas',
-        path:
-          '/dashboard/alerts',
-        icon:
-          'bi-exclamation-triangle',
+        path: '/dashboard/alerts',
+        icon: 'bi-exclamation-triangle',
+      },
+    ],
+  },
+];
+
+const medicationNavigationSections = [
+  {
+    title: 'Administración de tomas',
+    items: [
+      {
+        label: 'Tomas de hoy',
+        path: '/dashboard/reminders',
+        icon: 'bi-capsule-pill',
+      },
+      {
+        label: 'Historial de tomas',
+        path: '/dashboard/history',
+        icon: 'bi-clock-history',
       },
     ],
   },
@@ -112,8 +117,9 @@ function FamilySidebar({
   isOpen,
   onClose,
 }) {
-  const navigate =
-    useNavigate();
+  const navigate = useNavigate();
+  const limitedAccess =
+    isMedicationOnlyAccess();
 
   const familySettings =
     getFamilySettings();
@@ -121,13 +127,17 @@ function FamilySidebar({
   const family =
     getCurrentFamilySubscription();
 
-  const user =
-    getCurrentUser();
+  const user = getCurrentUser();
 
   const familyName =
     family?.familyName?.trim() ||
     familySettings.familyName?.trim() ||
     'Mi familia';
+
+  const navigationSections =
+    limitedAccess
+      ? medicationNavigationSections
+      : fullNavigationSections;
 
   function handleLogout() {
     logoutUser();
@@ -141,15 +151,13 @@ function FamilySidebar({
   return (
     <aside
       className={`family-sidebar ${
-        isOpen
-          ? 'is-open'
-          : ''
+        isOpen ? 'is-open' : ''
       }`}
       aria-label="Navegación familiar"
     >
       <div className="family-sidebar__header">
         <NavLink
-          to="/dashboard"
+          to={getFamilyHomePath()}
           className="family-sidebar__brand"
           onClick={onClose}
         >
@@ -158,12 +166,11 @@ function FamilySidebar({
           </span>
 
           <span>
-            <strong>
-              MiPeque
-            </strong>
-
+            <strong>MiPeque</strong>
             <small>
-              Salud organizada
+              {limitedAccess
+                ? 'Administración de tomas'
+                : 'Salud organizada'}
             </small>
           </span>
         </NavLink>
@@ -184,18 +191,11 @@ function FamilySidebar({
         </div>
 
         <div>
-          <span>
-            Cuenta familiar
-          </span>
-
-          <strong>
-            {familyName}
-          </strong>
+          <span>Cuenta familiar</span>
+          <strong>{familyName}</strong>
 
           {user?.fullName && (
-            <small>
-              {user.fullName}
-            </small>
+            <small>{user.fullName}</small>
           )}
         </div>
       </div>
@@ -204,27 +204,19 @@ function FamilySidebar({
         {navigationSections.map(
           (section) => (
             <div
-              key={
-                section.title
-              }
+              key={section.title}
               className="family-sidebar__group"
             >
               <span className="family-sidebar__section-title">
-                {
-                  section.title
-                }
+                {section.title}
               </span>
 
               {section.items.map(
                 (item) => (
                   <NavLink
-                    key={
-                      item.path
-                    }
+                    key={item.path}
                     to={item.path}
-                    end={
-                      item.end
-                    }
+                    end={item.end}
                     className={({
                       isActive,
                     }) =>
@@ -234,19 +226,12 @@ function FamilySidebar({
                           : ''
                       }`
                     }
-                    onClick={
-                      onClose
-                    }
+                    onClick={onClose}
                   >
                     <i
                       className={`bi ${item.icon}`}
                     />
-
-                    <span>
-                      {
-                        item.label
-                      }
-                    </span>
+                    <span>{item.label}</span>
                   </NavLink>
                 ),
               )}
@@ -256,44 +241,36 @@ function FamilySidebar({
       </nav>
 
       <div className="family-sidebar__footer">
-        <NavLink
-          to="/dashboard/settings"
-          className={({
-            isActive,
-          }) =>
-            `family-sidebar__link ${
-              isActive
-                ? 'is-active'
-                : ''
-            }`
-          }
-          onClick={onClose}
-        >
-          <i className="bi bi-gear" />
-          <span>
-            Configuración
-          </span>
-        </NavLink>
+        {!limitedAccess && (
+          <NavLink
+            to="/dashboard/settings"
+            className={({ isActive }) =>
+              `family-sidebar__link ${
+                isActive
+                  ? 'is-active'
+                  : ''
+              }`
+            }
+            onClick={onClose}
+          >
+            <i className="bi bi-gear" />
+            <span>Configuración</span>
+          </NavLink>
+        )}
 
         <button
           type="button"
           className="family-sidebar__link family-sidebar__logout"
-          onClick={
-            handleLogout
-          }
+          onClick={handleLogout}
           style={{
             width: '100%',
             border: 0,
-            background:
-              'transparent',
+            background: 'transparent',
             textAlign: 'left',
           }}
         >
           <i className="bi bi-box-arrow-left" />
-
-          <span>
-            Cerrar sesión
-          </span>
+          <span>Cerrar sesión</span>
         </button>
       </div>
     </aside>

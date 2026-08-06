@@ -163,6 +163,24 @@ function CaregiverCard({
           </span>
         )}
 
+
+        {caregiver.hasSystemAccess &&
+          caregiver.role !== 'owner' && (
+            <span className="caregiver-card__badge caregiver-card__badge--selected">
+              <i
+                className={`bi ${
+                  caregiver.accessLevel === 'medication_only'
+                    ? 'bi-capsule-pill'
+                    : 'bi-shield-check'
+                }`}
+              />
+
+              {caregiver.accessLevel === 'medication_only'
+                ? 'Solo tomas'
+                : 'Acceso completo'}
+            </span>
+          )}
+
         {!caregiver.hasSystemAccess &&
           caregiver.role !== 'owner' && (
             <span className="caregiver-card__badge caregiver-card__badge--no-access">

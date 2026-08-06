@@ -6,6 +6,14 @@ import {
 
 import { Link } from 'react-router-dom';
 
+import {
+  getCurrentUser,
+} from '../../services/authService.js';
+
+import {
+  isMedicationOnlyAccess,
+} from '../../services/familyAccessService.js';
+
 import ReminderCard from '../../components/cards/ReminderCard.jsx';
 
 import { getChildren } from '../../services/childrenService.js';
@@ -58,6 +66,11 @@ function getLocalDateKey(date = new Date()) {
 }
 
 function RemindersPage() {
+  const limitedAccess =
+    isMedicationOnlyAccess();
+
+  const currentUser =
+    getCurrentUser();
   const [children] = useState(() =>
     getChildren(),
   );
@@ -70,16 +83,34 @@ function RemindersPage() {
     getReminderRecords(),
   );
 
-  const [caregivers] = useState(() =>
-    getCaregivers().filter(
-      (caregiver) => caregiver.isActive,
-    ),
-  );
+  const [caregivers] = useState(() => {
+    const activeCaregivers =
+      getCaregivers().filter(
+        (caregiver) => caregiver.isActive,
+      );
+
+    if (!limitedAccess) {
+      return activeCaregivers;
+    }
+
+    return activeCaregivers.filter(
+      (caregiver) =>
+        caregiver.id ===
+        currentUser?.caregiverId,
+    );
+  });
 
   const [
     selectedCaregiverId,
     setSelectedCaregiverId,
   ] = useState(() => {
+    if (
+      limitedAccess &&
+      currentUser?.caregiverId
+    ) {
+      return currentUser.caregiverId;
+    }
+
     const storedCaregiverId =
       getActiveCaregiverId();
 
@@ -279,8 +310,11 @@ function RemindersPage() {
   }
 
   function handleCaregiverChange(event) {
-    const caregiverId = event.target.value;
+    if (limitedAccess) {
+      return;
+    }
 
+    const caregiverId = event.target.value;
     setSelectedCaregiverId(caregiverId);
   }
 
@@ -478,13 +512,15 @@ function RemindersPage() {
           </p>
         </div>
 
-        <Link
-          to="/dashboard/treatments"
-          className="btn btn-primary"
-        >
-          <i className="bi bi-capsule" />
-          Ver tratamientos
-        </Link>
+        {!limitedAccess && (
+          <Link
+            to="/dashboard/treatments"
+            className="btn btn-primary"
+          >
+            <i className="bi bi-capsule" />
+            Ver tratamientos
+          </Link>
+        )}
       </section>
 
       {treatments.length === 0 && (
@@ -503,12 +539,14 @@ function RemindersPage() {
             </p>
           </div>
 
-          <Link
-            to="/dashboard/treatments"
-            className="btn btn-outline-primary"
-          >
-            Crear tratamiento
-          </Link>
+          {!limitedAccess && (
+            <Link
+              to="/dashboard/treatments"
+              className="btn btn-outline-primary"
+            >
+              Crear tratamiento
+            </Link>
+          )}
         </section>
       )}
 
@@ -538,7 +576,10 @@ function RemindersPage() {
         <select
           value={selectedCaregiverId}
           onChange={handleCaregiverChange}
-          disabled={caregivers.length === 0}
+          disabled={
+            limitedAccess ||
+            caregivers.length === 0
+          }
           aria-label="Seleccionar responsable familiar"
         >
           <option value="">
@@ -561,16 +602,18 @@ function RemindersPage() {
           )}
         </select>
 
-        <Link
-          to="/dashboard/caregivers"
-          className="btn btn-outline-primary"
-        >
-          <i className="bi bi-people" />
+        {!limitedAccess && (
+          <Link
+            to="/dashboard/caregivers"
+            className="btn btn-outline-primary"
+          >
+            <i className="bi bi-people" />
 
-          {caregivers.length === 0
-            ? 'Agregar responsable'
-            : 'Gestionar responsables'}
-        </Link>
+            {caregivers.length === 0
+              ? 'Agregar responsable'
+              : 'Gestionar responsables'}
+          </Link>
+        )}
       </section>
 
       <section className="reminders-statistics">
@@ -850,7 +893,9 @@ function RemindersPage() {
                           handlePostpone
                         }
                         onReset={
-                          handleReset
+                          limitedAccess
+                            ? undefined
+                            : handleReset
                         }
                       />
                     ),
@@ -874,11 +919,14 @@ function RemindersPage() {
 
           <p>
             {reminders.length === 0
-              ? 'Creá un tratamiento con horarios para generar automáticamente las próximas tomas.'
+              ? limitedAccess
+                ? 'Todavía no hay tomas programadas. El responsable principal debe crear un tratamiento.'
+                : 'Creá un tratamiento con horarios para generar automáticamente las próximas tomas.'
               : 'Probá cambiando la fecha, el estado, el hijo o el término de búsqueda.'}
           </p>
 
-          {reminders.length === 0 && (
+          {reminders.length === 0 &&
+            !limitedAccess && (
             <Link
               to="/dashboard/treatments"
               className="btn btn-primary"

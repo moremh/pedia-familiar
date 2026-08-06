@@ -7,6 +7,7 @@ import {
 import {
   AdminProtectedRoute,
   FamilyProtectedRoute,
+  FullFamilyAccessRoute,
 } from '../components/auth/AuthRouteGuards.jsx';
 
 import FamilyLayout from '../components/layout/FamilyLayout.jsx';
@@ -14,6 +15,10 @@ import FamilyLayout from '../components/layout/FamilyLayout.jsx';
 import {
   getCurrentSession,
 } from '../services/authService.js';
+
+import {
+  getFamilyHomePath,
+} from '../services/familyAccessService.js';
 
 import LoginPage from '../pages/auth/LoginPage.jsx';
 import RegisterPage from '../pages/auth/RegisterPage.jsx';
@@ -37,21 +42,13 @@ import AdminDashboardPage from '../pages/admin/AdminDashboardPage.jsx';
 import NotFoundPage from '../pages/NotFoundPage.jsx';
 
 function HomeRedirect() {
-  const session =
-    getCurrentSession();
+  const session = getCurrentSession();
 
   if (!session) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-      />
-    );
+    return <Navigate to="/login" replace />;
   }
 
-  if (
-    session.role === 'admin'
-  ) {
+  if (session.role === 'admin') {
     return (
       <Navigate
         to="/admin/dashboard"
@@ -62,188 +59,152 @@ function HomeRedirect() {
 
   return (
     <Navigate
-      to="/dashboard"
+      to={getFamilyHomePath()}
       replace
     />
   );
 }
 
+function DashboardIndexRedirect() {
+  const destination = getFamilyHomePath();
+
+  if (destination !== '/dashboard') {
+    return (
+      <Navigate
+        to={destination}
+        replace
+      />
+    );
+  }
+
+  return <FamilyDashboardPage />;
+}
+
 function AppRoutes() {
   return (
     <Routes>
-      <Route
-        path="/"
-        element={
-          <HomeRedirect />
-        }
-      />
+      <Route path="/" element={<HomeRedirect />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/invite/:token" element={<InvitationPage />} />
 
-      <Route
-        path="/login"
-        element={<LoginPage />}
-      />
-
-      <Route
-        path="/register"
-        element={
-          <RegisterPage />
-        }
-      />
-
-      <Route
-        path="/invite/:token"
-        element={
-          <InvitationPage />
-        }
-      />
-
-      <Route
-        element={
-          <FamilyProtectedRoute />
-        }
-      >
+      <Route element={<FamilyProtectedRoute />}>
         <Route
           path="/subscription"
-          element={
-            <SubscriptionExpiredPage />
-          }
+          element={<SubscriptionExpiredPage />}
         />
 
         <Route
           path="/dashboard"
-          element={
-            <FamilyLayout />
-          }
+          element={<FamilyLayout />}
         >
           <Route
             index
-            element={
-              <FamilyDashboardPage />
-            }
-          />
-
-          <Route
-            path="children"
-            element={
-              <ChildrenPage />
-            }
-          />
-
-          <Route
-            path="consultations"
-            element={
-              <ConsultationsPage />
-            }
-          />
-
-          <Route
-            path="treatments"
-            element={
-              <TreatmentsPage />
-            }
+            element={<DashboardIndexRedirect />}
           />
 
           <Route
             path="reminders"
-            element={
-              <RemindersPage />
-            }
-          />
-
-          <Route
-            path="documents"
-            element={
-              <DocumentsPage />
-            }
-          />
-
-          <Route
-            path="vaccines"
-            element={
-              <VaccinesPage />
-            }
-          />
-
-          <Route
-            path="medicine-cabinet"
-            element={
-              <MedicineCabinetPage />
-            }
-          />
-
-          <Route
-            path="caregivers"
-            element={
-              <CaregiversPage />
-            }
-          />
-
-          <Route
-            path="alerts"
-            element={
-              <AlertsPage />
-            }
+            element={<RemindersPage />}
           />
 
           <Route
             path="history"
-            element={
-              <MedicationHistoryPage />
-            }
+            element={<MedicationHistoryPage />}
           />
 
-          <Route
-            path="settings"
-            element={
-              <SettingsPage />
-            }
-          />
+          <Route element={<FullFamilyAccessRoute />}>
+            <Route
+              path="children"
+              element={<ChildrenPage />}
+            />
 
-          <Route
-            path="appointments"
-            element={
-              <Navigate
-                to="/dashboard/consultations"
-                replace
-              />
-            }
-          />
+            <Route
+              path="consultations"
+              element={<ConsultationsPage />}
+            />
 
-          <Route
-            path="growth"
-            element={
-              <Navigate
-                to="/dashboard/children"
-                replace
-              />
-            }
-          />
+            <Route
+              path="treatments"
+              element={<TreatmentsPage />}
+            />
 
-          <Route
-            path="family-members"
-            element={
-              <Navigate
-                to="/dashboard/caregivers"
-                replace
-              />
-            }
-          />
+            <Route
+              path="documents"
+              element={<DocumentsPage />}
+            />
 
-          <Route
-            path="subscription"
-            element={
-              <Navigate
-                to="/subscription"
-                replace
-              />
-            }
-          />
+            <Route
+              path="vaccines"
+              element={<VaccinesPage />}
+            />
+
+            <Route
+              path="medicine-cabinet"
+              element={<MedicineCabinetPage />}
+            />
+
+            <Route
+              path="caregivers"
+              element={<CaregiversPage />}
+            />
+
+            <Route
+              path="alerts"
+              element={<AlertsPage />}
+            />
+
+            <Route
+              path="settings"
+              element={<SettingsPage />}
+            />
+
+            <Route
+              path="appointments"
+              element={
+                <Navigate
+                  to="/dashboard/consultations"
+                  replace
+                />
+              }
+            />
+
+            <Route
+              path="growth"
+              element={
+                <Navigate
+                  to="/dashboard/children"
+                  replace
+                />
+              }
+            />
+
+            <Route
+              path="family-members"
+              element={
+                <Navigate
+                  to="/dashboard/caregivers"
+                  replace
+                />
+              }
+            />
+
+            <Route
+              path="subscription"
+              element={
+                <Navigate
+                  to="/subscription"
+                  replace
+                />
+              }
+            />
+          </Route>
 
           <Route
             path="*"
             element={
               <Navigate
-                to="/dashboard"
+                to={getFamilyHomePath()}
                 replace
               />
             }
@@ -251,11 +212,7 @@ function AppRoutes() {
         </Route>
       </Route>
 
-      <Route
-        element={
-          <AdminProtectedRoute />
-        }
-      >
+      <Route element={<AdminProtectedRoute />}>
         <Route
           path="/admin"
           element={
@@ -268,18 +225,11 @@ function AppRoutes() {
 
         <Route
           path="/admin/dashboard"
-          element={
-            <AdminDashboardPage />
-          }
+          element={<AdminDashboardPage />}
         />
       </Route>
 
-      <Route
-        path="*"
-        element={
-          <NotFoundPage />
-        }
-      />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }

@@ -347,9 +347,14 @@ function CaregiversPage() {
       }
 
       const accessResult =
-        await ensureCaregiverSystemAccess(
-          savedCaregiver,
-        );
+        await ensureCaregiverSystemAccess({
+          ...savedCaregiver,
+          hasSystemAccess:
+            Boolean(data.hasSystemAccess),
+          accessLevel:
+            data.accessLevel ||
+            'full_access',
+        });
 
       refreshCaregivers();
       closeForm();
@@ -383,7 +388,9 @@ function CaregiversPage() {
       ) {
         showFeedback(
           'success',
-          'El responsable tiene acceso habilitado a la familia.',
+          data.accessLevel === 'medication_only'
+            ? 'El responsable puede entrar para administrar tomas.'
+            : 'El responsable tiene acceso completo habilitado a la familia.',
         );
 
         return;

@@ -242,6 +242,11 @@ function mapProfileToUser(profile, member = null) {
       profile.app_role === 'admin'
         ? 'admin'
         : member?.member_role || 'member',
+    accessLevel:
+      profile.app_role === 'admin' ||
+      member?.member_role === 'owner'
+        ? 'full_access'
+        : member?.access_level || 'full_access',
     status: profile.status || 'active',
     createdAt: profile.created_at,
     updatedAt: profile.updated_at,
@@ -265,6 +270,12 @@ function mapCaregiverRow(row, memberByCaregiverId = new Map()) {
     invitedAt: row.invited_at || '',
     invitationAcceptedAt: row.invitation_accepted_at || '',
     role: member?.member_role || 'member',
+    accessLevel:
+      member?.member_role === 'owner'
+        ? 'full_access'
+        : row.system_access_level ||
+          member?.access_level ||
+          'full_access',
     notes: row.notes || '',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -885,6 +896,10 @@ export async function loadCurrentAccountCache(authUser) {
     userId: authUser.id,
     familyId: member.family_id,
     role: member.member_role || 'member',
+    accessLevel:
+      member.member_role === 'owner'
+        ? 'full_access'
+        : member.access_level || 'full_access',
     signedInAt: new Date().toISOString(),
   };
 

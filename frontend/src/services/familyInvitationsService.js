@@ -83,6 +83,9 @@ function normalizePreview(data) {
       relationship:
         data.relationship ||
         'other',
+      accessLevel:
+        data.accessLevel ||
+        'full_access',
       email: data.email,
       status:
         data.status || 'pending',

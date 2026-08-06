@@ -11,6 +11,7 @@ const emptyForm = {
   isPrimary: false,
   isActive: true,
   hasSystemAccess: false,
+  accessLevel: 'full_access',
   notes: '',
 };
 
@@ -39,6 +40,11 @@ function CaregiverForm({
           Boolean(
             initialData.hasSystemAccess,
           ),
+        accessLevel:
+          initialData.role === 'owner'
+            ? 'full_access'
+            : initialData.accessLevel ||
+              'full_access',
       });
     } else {
       setFormData(
@@ -58,14 +64,25 @@ function CaregiverForm({
     } = event.target;
 
     setFormData(
-      (currentData) => ({
-        ...currentData,
+      (currentData) => {
+        const nextData = {
+          ...currentData,
+          [name]:
+            type === 'checkbox'
+              ? checked
+              : value,
+        };
 
-        [name]:
-          type === 'checkbox'
-            ? checked
-            : value,
-      }),
+        if (
+          name === 'hasSystemAccess' &&
+          !checked
+        ) {
+          nextData.accessLevel =
+            'full_access';
+        }
+
+        return nextData;
+      },
     );
 
     setError('');
@@ -157,6 +174,11 @@ function CaregiverForm({
       isActive:
         formData.isActive,
       hasSystemAccess,
+      accessLevel:
+        isOwnerAccount
+          ? 'full_access'
+          : formData.accessLevel ||
+            'full_access',
       notes:
         formData.notes.trim(),
     });
@@ -440,6 +462,73 @@ function CaregiverForm({
             </span>
           </label>
         </div>
+
+        {formData.hasSystemAccess &&
+          !isOwnerAccount && (
+            <div className="caregiver-form__access-level">
+              <div className="caregiver-form__access-level-header">
+                <strong>Tipo de acceso</strong>
+
+                <small>
+                  Elegí qué podrá hacer esta persona al iniciar sesión.
+                </small>
+              </div>
+
+              <label
+                className={`caregiver-form__access-choice ${
+                  formData.accessLevel === 'full_access'
+                    ? 'is-selected'
+                    : ''
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="accessLevel"
+                  value="full_access"
+                  checked={
+                    formData.accessLevel === 'full_access'
+                  }
+                  onChange={handleChange}
+                />
+
+                <i className="bi bi-shield-check" />
+
+                <span>
+                  <strong>Acceso completo</strong>
+                  <small>
+                    Puede consultar y modificar la información familiar.
+                  </small>
+                </span>
+              </label>
+
+              <label
+                className={`caregiver-form__access-choice ${
+                  formData.accessLevel === 'medication_only'
+                    ? 'is-selected'
+                    : ''
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="accessLevel"
+                  value="medication_only"
+                  checked={
+                    formData.accessLevel === 'medication_only'
+                  }
+                  onChange={handleChange}
+                />
+
+                <i className="bi bi-capsule-pill" />
+
+                <span>
+                  <strong>Solo administración de tomas</strong>
+                  <small>
+                    Puede ver recordatorios y registrar tomas, sin modificar tratamientos ni configuración.
+                  </small>
+                </span>
+              </label>
+            </div>
+          )}
 
         {formData.hasSystemAccess &&
           !isOwnerAccount && (

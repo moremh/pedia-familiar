@@ -115,7 +115,7 @@ function ReminderCard({
               Omitir
             </button>
           </>
-        ) : (
+        ) : onReset ? (
           <button
             type="button"
             className="reminder-card__action reminder-card__action--reset"
@@ -124,7 +124,7 @@ function ReminderCard({
             <i className="bi bi-arrow-counterclockwise" />
             Volver a pendiente
           </button>
-        )}
+        ) : null}
       </div>
     </article>
   );

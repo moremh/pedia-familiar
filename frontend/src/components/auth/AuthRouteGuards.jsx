@@ -14,9 +14,13 @@ import {
   validateCurrentSession,
 } from '../../services/authService.js';
 
+import {
+  FAMILY_ACCESS_LEVELS,
+  getFamilyHomePath,
+} from '../../services/familyAccessService.js';
+
 function useSessionValidation() {
-  const [, setRevision] =
-    useState(0);
+  const [, setRevision] = useState(0);
 
   useEffect(() => {
     function refreshValidation() {
@@ -36,11 +40,10 @@ function useSessionValidation() {
       refreshValidation,
     );
 
-    const intervalId =
-      window.setInterval(
-        refreshValidation,
-        15000,
-      );
+    const intervalId = window.setInterval(
+      refreshValidation,
+      15000,
+    );
 
     return () => {
       window.removeEventListener(
@@ -53,9 +56,7 @@ function useSessionValidation() {
         refreshValidation,
       );
 
-      window.clearInterval(
-        intervalId,
-      );
+      window.clearInterval(intervalId);
     };
   }, []);
 
@@ -63,17 +64,13 @@ function useSessionValidation() {
 }
 
 export function FamilyProtectedRoute() {
-  const location =
-    useLocation();
-
-  const validation =
-    useSessionValidation();
+  const location = useLocation();
+  const validation = useSessionValidation();
 
   useEffect(() => {
     if (
       !validation.valid &&
-      validation.reason !==
-        'missing-session'
+      validation.reason !== 'missing-session'
     ) {
       clearInvalidSession();
     }
@@ -88,16 +85,14 @@ export function FamilyProtectedRoute() {
         to="/login"
         replace
         state={{
-          from:
-            location.pathname,
+          from: location.pathname,
         }}
       />
     );
   }
 
   if (
-    validation.session.role ===
-    'admin'
+    validation.session.role === 'admin'
   ) {
     return (
       <Navigate
@@ -110,18 +105,48 @@ export function FamilyProtectedRoute() {
   return <Outlet />;
 }
 
-export function AdminProtectedRoute() {
-  const location =
-    useLocation();
+export function FullFamilyAccessRoute() {
+  const validation = useSessionValidation();
 
-  const validation =
-    useSessionValidation();
+  if (!validation.valid) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+      />
+    );
+  }
+
+  const accessLevel =
+    validation.session.role === 'owner'
+      ? FAMILY_ACCESS_LEVELS.FULL
+      : validation.session.accessLevel ||
+        validation.user?.accessLevel ||
+        FAMILY_ACCESS_LEVELS.FULL;
+
+  if (
+    accessLevel !==
+    FAMILY_ACCESS_LEVELS.FULL
+  ) {
+    return (
+      <Navigate
+        to={getFamilyHomePath()}
+        replace
+      />
+    );
+  }
+
+  return <Outlet />;
+}
+
+export function AdminProtectedRoute() {
+  const location = useLocation();
+  const validation = useSessionValidation();
 
   useEffect(() => {
     if (
       !validation.valid &&
-      validation.reason !==
-        'missing-session'
+      validation.reason !== 'missing-session'
     ) {
       clearInvalidSession();
     }
@@ -136,20 +161,18 @@ export function AdminProtectedRoute() {
         to="/login"
         replace
         state={{
-          from:
-            location.pathname,
+          from: location.pathname,
         }}
       />
     );
   }
 
   if (
-    validation.session.role !==
-    'admin'
+    validation.session.role !== 'admin'
   ) {
     return (
       <Navigate
-        to="/dashboard"
+        to={getFamilyHomePath()}
         replace
       />
     );

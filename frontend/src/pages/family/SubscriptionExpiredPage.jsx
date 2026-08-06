@@ -25,6 +25,11 @@ import {
   logoutUser,
 } from '../../services/authService.js';
 
+import {
+  getFamilyHomePath,
+  isMedicationOnlyAccess,
+} from '../../services/familyAccessService.js';
+
 import '../../styles/subscription-expired.css';
 import '../../styles/subscription-expired-commercial.css';
 
@@ -64,6 +69,8 @@ function formatDate(date) {
 
 function SubscriptionExpiredPage() {
   const navigate = useNavigate();
+  const limitedAccess =
+    isMedicationOnlyAccess();
   const [family, setFamily] =
     useState(() =>
       getCurrentFamilySubscription(),
@@ -218,9 +225,79 @@ function SubscriptionExpiredPage() {
   if (accessState.allowed) {
     return (
       <Navigate
-        to="/dashboard"
+        to={getFamilyHomePath()}
         replace
       />
+    );
+  }
+
+  if (limitedAccess) {
+    return (
+      <main className="subscription-page">
+        <header className="subscription-page__header">
+          <Link
+            to="/login"
+            className="subscription-page__brand"
+          >
+            <span>
+              <i className="bi bi-heart-pulse-fill" />
+            </span>
+
+            <div>
+              <strong>MiPeque</strong>
+              <small>Administración de tomas</small>
+            </div>
+          </Link>
+
+          <button
+            type="button"
+            className="btn btn-outline-secondary"
+            onClick={handleLogout}
+          >
+            <i className="bi bi-box-arrow-left" />
+            Cerrar sesión
+          </button>
+        </header>
+
+        <section className="subscription-hero">
+          <span
+            className={`subscription-hero__icon subscription-hero__icon--${accessState.status}`}
+          >
+            <i className="bi bi-person-lock" />
+          </span>
+
+          <span className="subscription-hero__eyebrow">
+            Acceso familiar
+          </span>
+
+          <h1>La cuenta familiar no está activa</h1>
+
+          <p>
+            Como responsable de tomas no podés modificar la suscripción.
+            Comunicate con el responsable principal para que reactive MiPeque.
+          </p>
+
+          {family && (
+            <div className="subscription-hero__family">
+              <span>
+                <i className="bi bi-people" />
+              </span>
+
+              <div>
+                <small>Cuenta familiar</small>
+                <strong>{family.familyName}</strong>
+              </div>
+
+              <div>
+                <small>Fecha de vencimiento</small>
+                <strong>
+                  {formatDate(expirationDate)}
+                </strong>
+              </div>
+            </div>
+          )}
+        </section>
+      </main>
     );
   }
 

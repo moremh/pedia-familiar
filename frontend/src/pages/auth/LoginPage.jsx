@@ -12,6 +12,11 @@ import {
   getSubscriptionAccessState,
 } from '../../services/subscriptionService.js';
 
+import {
+  getFamilyHomePath,
+  isMedicationOnlyAccess,
+} from '../../services/familyAccessService.js';
+
 function LoginPage() {
   const navigate =
     useNavigate();
@@ -96,14 +101,18 @@ function LoginPage() {
         return;
       }
 
+      const familyHomePath =
+        getFamilyHomePath();
+
       const destination =
+        !isMedicationOnlyAccess() &&
         typeof requestedPath ===
           'string' &&
         requestedPath.startsWith(
           '/dashboard',
         )
           ? requestedPath
-          : '/dashboard';
+          : familyHomePath;
 
       navigate(destination, {
         replace: true,

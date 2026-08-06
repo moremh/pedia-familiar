@@ -41,6 +41,12 @@ function normalizeCaregiver(
     hasSystemAccess: Boolean(
       row.has_system_access,
     ),
+    accessLevel:
+      row.is_primary
+        ? 'full_access'
+        : row.system_access_level ||
+          previous.accessLevel ||
+          'full_access',
     invitationStatus:
       row.invitation_status ||
       'none',
@@ -110,7 +116,7 @@ async function fetchAndCacheCaregivers() {
     client
       .from('family_members')
       .select(
-        'caregiver_id, member_role, status',
+        'caregiver_id, member_role, access_level, status',
       )
       .eq(
         'family_id',
@@ -187,6 +193,13 @@ async function fetchAndCacheCaregivers() {
           member?.member_role ||
           caregiver.role ||
           'member';
+
+        caregiver.accessLevel =
+          caregiver.role === 'owner'
+            ? 'full_access'
+            : member?.access_level ||
+              caregiver.accessLevel ||
+              'full_access';
 
         return caregiver;
       },
@@ -370,6 +383,12 @@ export async function createCaregiver(
           .isActive ??
         true,
 
+      system_access_level:
+        shouldBePrimary
+          ? 'full_access'
+          : caregiverData.accessLevel ||
+            'full_access',
+
       notes:
         String(
           caregiverData
@@ -403,6 +422,13 @@ export async function createCaregiver(
         caregiverData
           .hasSystemAccess,
       );
+
+
+    savedCaregiver.accessLevel =
+      shouldBePrimary
+        ? 'full_access'
+        : caregiverData.accessLevel ||
+          'full_access';
   }
 
   if (
@@ -505,6 +531,12 @@ export async function updateCaregiver(
           .isActive ??
         true,
 
+      system_access_level:
+        shouldBePrimary
+          ? 'full_access'
+          : caregiverData.accessLevel ||
+            'full_access',
+
       notes:
         String(
           caregiverData
@@ -541,6 +573,13 @@ export async function updateCaregiver(
         caregiverData
           .hasSystemAccess,
       );
+
+
+    savedCaregiver.accessLevel =
+      shouldBePrimary
+        ? 'full_access'
+        : caregiverData.accessLevel ||
+          'full_access';
   }
 
   return savedCaregiver;
@@ -590,6 +629,8 @@ export async function setPrimaryCaregiver(
     .from('caregivers')
     .update({
       is_primary: true,
+      system_access_level:
+        'full_access',
     })
     .eq(
       'id',
