@@ -103,6 +103,148 @@ async function copyText(
   textarea.remove();
 }
 
+const DUPLICATE_CAREGIVER_MESSAGE =
+  'Ese responsable ya está unido a la familia.';
+
+function normalizeIdentityText(value) {
+  return String(value || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
+function normalizeIdentityEmail(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase();
+}
+
+function normalizeIdentityPhone(value) {
+  return String(value || '')
+    .replace(/\D/g, '');
+}
+
+function hasDuplicatedCaregiver(
+  caregivers,
+  caregiverData,
+  excludedCaregiverId = '',
+) {
+  const nextName =
+    normalizeIdentityText(
+      caregiverData.fullName,
+    );
+
+  const nextEmail =
+    normalizeIdentityEmail(
+      caregiverData.email,
+    );
+
+  const nextPhone =
+    normalizeIdentityPhone(
+      caregiverData.phone,
+    );
+
+  const nextRelationship =
+    String(
+      caregiverData.relationship ||
+        'other',
+    );
+
+  return caregivers.some(
+    (caregiver) => {
+      if (
+        caregiver.id ===
+        excludedCaregiverId
+      ) {
+        return false;
+      }
+
+      const existingName =
+        normalizeIdentityText(
+          caregiver.fullName,
+        );
+
+      const existingEmail =
+        normalizeIdentityEmail(
+          caregiver.email,
+        );
+
+      const existingPhone =
+        normalizeIdentityPhone(
+          caregiver.phone,
+        );
+
+      const existingRelationship =
+        String(
+          caregiver.relationship ||
+            'other',
+        );
+
+      const sameEmail =
+        Boolean(nextEmail) &&
+        existingEmail === nextEmail;
+
+      const sameNameAndPhone =
+        Boolean(nextPhone) &&
+        existingName === nextName &&
+        existingPhone === nextPhone;
+
+      const sameCompleteData =
+        existingName === nextName &&
+        existingRelationship ===
+          nextRelationship &&
+        existingEmail === nextEmail &&
+        existingPhone === nextPhone;
+
+      return (
+        sameEmail ||
+        sameNameAndPhone ||
+        sameCompleteData
+      );
+    },
+  );
+}
+
+function getCaregiverSaveErrorMessage(
+  error,
+) {
+  const errorText = [
+    error?.message,
+    error?.details,
+    error?.hint,
+    error?.code,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  if (
+    errorText.includes(
+      'ese responsable ya está unido',
+    ) ||
+    errorText.includes(
+      'caregivers_no_duplicates_per_family',
+    ) ||
+    errorText.includes(
+      'duplicate key',
+    ) ||
+    errorText.includes('23505') ||
+    errorText.includes(
+      'esta cuenta ya pertenece a esta familia',
+    ) ||
+    errorText.includes(
+      'ya se encuentra vinculada a esta familia',
+    )
+  ) {
+    return DUPLICATE_CAREGIVER_MESSAGE;
+  }
+
+  return (
+    error?.message ||
+    'No se pudo guardar el responsable.'
+  );
+}
+
 function CaregiversPage() {
   const [caregivers, setCaregivers] =
     useState(() =>
@@ -160,6 +302,11 @@ function CaregiversPage() {
     feedback,
     setFeedback,
   ] = useState(null);
+
+  const [
+    formError,
+    setFormError,
+  ] = useState('');
 
   const caregiverStatsMap =
     useMemo(
@@ -308,6 +455,7 @@ function CaregiversPage() {
     setSelectedCaregiver(null);
     setIsFormOpen(true);
     setFeedback(null);
+    setFormError('');
   }
 
   function openEditForm(
@@ -319,16 +467,35 @@ function CaregiversPage() {
     );
     setIsFormOpen(true);
     setFeedback(null);
+    setFormError('');
   }
 
   function closeForm() {
     setEditingCaregiver(null);
     setIsFormOpen(false);
+    setFormError('');
   }
 
   async function handleSaveCaregiver(
     data,
   ) {
+    setFormError('');
+
+    const duplicated =
+      hasDuplicatedCaregiver(
+        caregivers,
+        data,
+        editingCaregiver?.id || '',
+      );
+
+    if (duplicated) {
+      setFormError(
+        DUPLICATE_CAREGIVER_MESSAGE,
+      );
+
+      return;
+    }
+
     try {
       const savedCaregiver =
         editingCaregiver
@@ -350,7 +517,9 @@ function CaregiversPage() {
         await ensureCaregiverSystemAccess({
           ...savedCaregiver,
           hasSystemAccess:
-            Boolean(data.hasSystemAccess),
+            Boolean(
+              data.hasSystemAccess,
+            ),
           accessLevel:
             data.accessLevel ||
             'full_access',
@@ -388,7 +557,8 @@ function CaregiversPage() {
       ) {
         showFeedback(
           'success',
-          data.accessLevel === 'medication_only'
+          data.accessLevel ===
+            'medication_only'
             ? 'El responsable puede entrar para administrar tomas.'
             : 'El responsable tiene acceso completo habilitado a la familia.',
         );
@@ -403,11 +573,19 @@ function CaregiversPage() {
           : 'El responsable fue agregado correctamente.',
       );
     } catch (error) {
-      showFeedback(
-        'error',
-        error.message ||
-          'No se pudo guardar el responsable.',
-      );
+      const errorMessage =
+        getCaregiverSaveErrorMessage(
+          error,
+        );
+
+      setFormError(errorMessage);
+
+      if (
+        errorMessage ===
+        DUPLICATE_CAREGIVER_MESSAGE
+      ) {
+        refreshCaregivers();
+      }
     }
   }
 
@@ -1054,6 +1232,19 @@ ${invitationShare.url}`,
             </header>
 
             <div className="caregivers-modal__body">
+              {formError && (
+                <div
+                  className="caregivers-feedback caregivers-feedback--error"
+                  role="alert"
+                >
+                  <i className="bi bi-exclamation-circle" />
+
+                  <span>
+                    {formError}
+                  </span>
+                </div>
+              )}
+
               <CaregiverForm
                 initialData={
                   editingCaregiver
