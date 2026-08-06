@@ -951,3 +951,57 @@
     width: auto;
   }
 }
+
+/* AJUSTE DEFINITIVO DEL AVISO DUPLICADO EN TELÉFONOS */
+.caregivers-modal--compact-alert {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.caregivers-modal--compact-alert .caregivers-modal__container--duplicate {
+  width: min(100%, 360px);
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: calc(100dvh - 36px) !important;
+  flex: 0 0 auto !important;
+  align-self: center;
+  justify-self: center;
+  overflow: visible;
+}
+
+@media (max-width: 480px) {
+  .caregivers-modal--compact-alert {
+    padding: 16px;
+  }
+
+  .caregivers-modal--compact-alert .caregivers-modal__container--duplicate {
+    width: min(100%, 320px);
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: calc(100dvh - 32px) !important;
+    padding: 24px 18px 20px;
+    border-radius: 18px;
+  }
+
+  .caregivers-duplicate-alert__icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 13px;
+    border-radius: 14px;
+    font-size: 1.3rem;
+  }
+
+  .caregivers-modal__container--duplicate h2 {
+    font-size: 1rem;
+  }
+
+  .caregivers-modal__container--duplicate p {
+    margin: 8px 0 17px;
+    font-size: 0.74rem;
+  }
+
+  .caregivers-duplicate-alert__button {
+    min-width: 125px;
+    width: auto !important;
+  }
+}
