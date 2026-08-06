@@ -1289,3 +1289,57 @@
     font-size: 0.9rem;
   }
 }
+/* =========================================================
+   CORRECCIÓN DEL ENCABEZADO EN TELÉFONOS
+   - Oculta el texto "Panel familiar".
+   - Mantiene los controles en la primera fila.
+   - Muestra el nombre completo de la pestaña en una segunda fila.
+   ========================================================= */
+
+@media (max-width: 680px) {
+  .family-navbar {
+    display: grid;
+    min-height: auto;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px 10px;
+    padding: 10px 14px 12px;
+  }
+
+  .family-navbar__left {
+    display: contents;
+  }
+
+  .family-navbar__menu-button {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .family-navbar__actions {
+    min-width: 0;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .family-navbar__left > div {
+    width: 100%;
+    min-width: 0;
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .family-navbar__eyebrow {
+    display: none;
+  }
+
+  .family-navbar__left h1 {
+    overflow: visible;
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.25;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
