@@ -1274,7 +1274,7 @@ ${invitationShare.url}`,
 
       {isDuplicateAlertOpen && (
         <div
-          className="caregivers-modal"
+          className="caregivers-modal caregivers-modal--compact-alert"
           role="alertdialog"
           aria-modal="true"
           aria-labelledby="duplicateCaregiverTitle"
@@ -1289,61 +1289,39 @@ ${invitationShare.url}`,
             aria-label="Cerrar aviso"
           />
 
-          <div
-            className="caregivers-modal__container caregivers-modal__container--invitation"
-            style={{ maxWidth: '440px' }}
-          >
-            <header className="caregivers-modal__header">
-              <div>
-                <span>
-                  Responsable existente
-                </span>
+          <div className="caregivers-modal__container caregivers-modal__container--duplicate">
+            <button
+              type="button"
+              className="caregivers-duplicate-alert__close"
+              onClick={() =>
+                setIsDuplicateAlertOpen(false)
+              }
+              aria-label="Cerrar"
+            >
+              <i className="bi bi-x-lg" />
+            </button>
 
-                <h2 id="duplicateCaregiverTitle">
-                  No se pudo agregar este responsable
-                </h2>
-              </div>
+            <span className="caregivers-duplicate-alert__icon">
+              <i className="bi bi-person-exclamation" />
+            </span>
 
-              <button
-                type="button"
-                onClick={() =>
-                  setIsDuplicateAlertOpen(false)
-                }
-                aria-label="Cerrar"
-              >
-                <i className="bi bi-x-lg" />
-              </button>
-            </header>
+            <h2 id="duplicateCaregiverTitle">
+              Este responsable ya existe
+            </h2>
 
-            <div className="caregivers-modal__body">
-              <section className="caregiver-invitation">
-                <span className="caregiver-invitation__icon">
-                  <i className="bi bi-exclamation-triangle" />
-                </span>
+            <p id="duplicateCaregiverDescription">
+              Ese responsable ya está unido a la familia.
+            </p>
 
-                <h3>
-                  Responsable ya registrado
-                </h3>
-
-                <p id="duplicateCaregiverDescription">
-                  Este usuario ya esta en la familia familia.
-                  Revisá la lista de responsables antes de
-                  intentar agregarlo nuevamente.
-                </p>
-              </section>
-            </div>
-
-            <footer className="caregivers-modal__footer">
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() =>
-                  setIsDuplicateAlertOpen(false)
-                }
-              >
-                Entendido
-              </button>
-            </footer>
+            <button
+              type="button"
+              className="btn btn-primary caregivers-duplicate-alert__button"
+              onClick={() =>
+                setIsDuplicateAlertOpen(false)
+              }
+            >
+              Entendido
+            </button>
           </div>
         </div>
       )}
