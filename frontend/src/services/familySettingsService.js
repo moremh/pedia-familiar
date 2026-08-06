@@ -11,9 +11,9 @@ import {
 
 import {
   flushPendingRemoteSync,
+  forceSyncAllFamilyData,
   loadCurrentAccountCache,
   notifyFamilyDataChanged,
-  syncAllFamilyData,
 } from './supabaseSyncService.js';
 
 import {
@@ -349,9 +349,10 @@ function createBackupHtml(backup) {
   const summary =
     backup.summary || {};
 
-  const safeBackupJson =
-    JSON.stringify(backup)
-      .replaceAll('<', '\\u003c');
+  const safeBackupText =
+    escapeHtml(
+      JSON.stringify(backup),
+    );
 
   const exportedDate =
     new Date(
@@ -457,7 +458,7 @@ function createBackupHtml(backup) {
     </small>
   </main>
 
-  <script id="mipeque-backup" type="application/json">${safeBackupJson}</script>
+  <textarea id="mipeque-backup" hidden>${safeBackupText}</textarea>
 </body>
 </html>`;
 }
@@ -484,18 +485,49 @@ function parseBackupContent(
     );
   }
 
-  const htmlMatch = text.match(
-    /<script[^>]*id=["']mipeque-backup["'][^>]*>([\s\S]*?)<\/script>/i,
-  );
+  try {
+    return JSON.parse(text);
+  } catch {
+    // Puede ser una copia visual en formato HTML.
+  }
 
-  const jsonContent =
-    htmlMatch
-      ? htmlMatch[1].trim()
-      : text;
+  let jsonContent = '';
+
+  try {
+    const documentResult =
+      new DOMParser().parseFromString(
+        text,
+        'text/html',
+      );
+
+    const backupElement =
+      documentResult.getElementById(
+        'mipeque-backup',
+      );
+
+    if (backupElement) {
+      jsonContent =
+        backupElement.tagName ===
+        'TEXTAREA'
+          ? backupElement.value
+          : backupElement.textContent || '';
+    }
+  } catch {
+    jsonContent = '';
+  }
+
+  if (!jsonContent.trim()) {
+    const oldHtmlMatch = text.match(
+      /<script[^>]*id=["']mipeque-backup["'][^>]*>([\s\S]*?)<\/script>/i,
+    );
+
+    jsonContent =
+      oldHtmlMatch?.[1] || '';
+  }
 
   try {
     return JSON.parse(
-      jsonContent,
+      jsonContent.trim(),
     );
   } catch {
     throw new Error(
@@ -622,6 +654,65 @@ async function removeFamilyStorageFiles(
   }
 
   return paths.length;
+}
+
+async function verifyRestoredFamilyData(
+  client,
+  familyId,
+  safeData,
+) {
+  const checks = [
+    ['mipeque-children', 'children', 'hijos'],
+    ['mipeque-consultations', 'consultations', 'consultas'],
+    ['mipeque-treatments', 'treatments', 'tratamientos'],
+    ['mipeque-reminder-records', 'reminder_records', 'tomas'],
+    ['mipeque-vaccines', 'vaccines', 'vacunas'],
+    ['mipeque-medical-documents', 'medical_documents', 'documentos'],
+    ['mipeque-medicine-cabinet', 'medicine_cabinet_items', 'medicamentos'],
+  ];
+
+  const differences = [];
+
+  for (const [storageKey, tableName, label] of checks) {
+    const localItems =
+      parseStoredValue(
+        safeData[storageKey],
+        [],
+      );
+
+    const expectedCount =
+      Array.isArray(localItems)
+        ? localItems.length
+        : 0;
+
+    const {
+      count,
+      error,
+    } = await client
+      .from(tableName)
+      .select('id', {
+        count: 'exact',
+        head: true,
+      })
+      .eq('family_id', familyId);
+
+    if (error) {
+      throw new Error(
+        error.message ||
+          `No se pudo comprobar la restauración de ${label}.`,
+      );
+    }
+
+    if (Number(count || 0) !== expectedCount) {
+      differences.push(label);
+    }
+  }
+
+  if (differences.length > 0) {
+    throw new Error(
+      `La copia se leyó, pero no se terminaron de restaurar: ${differences.join(', ')}. Volvé a intentar sin cerrar esta página.`,
+    );
+  }
 }
 
 export function getFamilySettings() {
@@ -871,11 +962,75 @@ export async function importFamilyBackup(
     );
   }
 
+  const familyId =
+    getCurrentFamilyId();
+
+  if (!familyId) {
+    throw new Error(
+      'No se encontró la familia activa.',
+    );
+  }
+
+  await flushPendingRemoteSync();
+
+  const client =
+    requireSupabase();
+
+  const previousStoragePaths =
+    await getFamilyStoragePaths(
+      client,
+      familyId,
+    );
+
+  const {
+    error: clearError,
+  } = await client.rpc(
+    'clear_family_data',
+    {
+      p_family_id: familyId,
+    },
+  );
+
+  if (clearError) {
+    throw new Error(
+      clearError.message ||
+        'No se pudo preparar la familia para restaurar la copia.',
+    );
+  }
+
+  try {
+    await removeFamilyStorageFiles(
+      client,
+      previousStoragePaths,
+    );
+  } catch (cleanupError) {
+    console.warn(
+      'No se pudieron eliminar algunos archivos anteriores antes de restaurar.',
+      cleanupError,
+    );
+  }
+
   replaceBackupData(
     safeData,
   );
 
-  await syncAllFamilyData();
+  try {
+    await forceSyncAllFamilyData();
+  } catch (syncError) {
+    persistFamilyChanges();
+
+    throw new Error(
+      syncError.message ||
+        'La copia se leyó correctamente, pero no se pudo guardar en Supabase.',
+    );
+  }
+
+  await verifyRestoredFamilyData(
+    client,
+    familyId,
+    safeData,
+  );
+
   await refreshCurrentAccountCache();
 
   return entries.length;

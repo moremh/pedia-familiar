@@ -287,7 +287,7 @@ function SettingsPage() {
         );
 
       window.alert(
-        `Se restauraron ${restoredItems} grupos de datos. La página se recargará para aplicar los cambios.`,
+        `La copia se restauró correctamente. Se recuperaron ${restoredItems} grupos de datos y se guardaron en Supabase.`,
       );
 
       window.location.reload();

@@ -1655,4 +1655,19 @@ export async function syncAllFamilyData() {
   }
 }
 
+export async function forceSyncAllFamilyData() {
+  if (syncTimer) {
+    window.clearTimeout(syncTimer);
+    syncTimer = null;
+  }
+
+  pendingSyncKeys.clear();
+  hydratedIdsByStorageKey.clear();
+  hydratedRowFingerprintsByStorageKey.clear();
+
+  for (const key of SYNC_PRIORITY) {
+    await syncStorageKey(key);
+  }
+}
+
 export { STORAGE_KEYS };
