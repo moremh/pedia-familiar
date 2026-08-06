@@ -1300,7 +1300,7 @@ ${invitationShare.url}`,
                 </span>
 
                 <h2 id="duplicateCaregiverTitle">
-                  Este responsable ya existe
+                  No se pudo agregar este responsable
                 </h2>
               </div>
 
@@ -1326,7 +1326,7 @@ ${invitationShare.url}`,
                 </h3>
 
                 <p id="duplicateCaregiverDescription">
-                  Ese responsable ya existe en esta familia.
+                  Este usuario ya esta en la familia familia.
                   Revisá la lista de responsables antes de
                   intentar agregarlo nuevamente.
                 </p>
