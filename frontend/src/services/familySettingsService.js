@@ -30,6 +30,7 @@ const BACKUP_STORAGE_KEYS = new Set([
   'mipeque-treatments',
   'mipeque-reminder-records',
   'mipeque-vaccines',
+  'mipeque-vaccine-calendar-marks',
   'mipeque-medical-documents',
   'mipeque-medicine-cabinet',
 ]);

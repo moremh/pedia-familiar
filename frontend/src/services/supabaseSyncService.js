@@ -17,6 +17,7 @@ const STORAGE_KEYS = {
   treatments: 'mipeque-treatments',
   reminders: 'mipeque-reminder-records',
   vaccines: 'mipeque-vaccines',
+  vaccineCalendar: 'mipeque-vaccine-calendar-marks',
   documents: 'mipeque-medical-documents',
   medicineCabinet: 'mipeque-medicine-cabinet',
   medicineUsage: 'mipeque-medicine-stock-usage',
@@ -29,6 +30,7 @@ const SYNCABLE_KEYS = new Set([
   STORAGE_KEYS.treatments,
   STORAGE_KEYS.reminders,
   STORAGE_KEYS.vaccines,
+  STORAGE_KEYS.vaccineCalendar,
   STORAGE_KEYS.documents,
   STORAGE_KEYS.medicineCabinet,
 ]);
@@ -40,6 +42,7 @@ const SYNC_PRIORITY = [
   STORAGE_KEYS.treatments,
   STORAGE_KEYS.reminders,
   STORAGE_KEYS.vaccines,
+  STORAGE_KEYS.vaccineCalendar,
   STORAGE_KEYS.documents,
   STORAGE_KEYS.medicineCabinet,
 ];
@@ -452,6 +455,17 @@ async function mapVaccineRow(client, row) {
   };
 }
 
+function mapVaccineCalendarMarkRow(row) {
+  return {
+    id: row.id,
+    childId: row.child_id,
+    scheduleKey: row.schedule_key,
+    checkedAt: row.checked_at || row.created_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 async function mapDocumentRow(client, row) {
   const file = row.storage_path
     ? await createSignedFile(client, row.storage_path, {
@@ -660,6 +674,7 @@ export async function loadFamilyCache(familyId, user = null) {
     treatmentsResult,
     remindersResult,
     vaccinesResult,
+    vaccineCalendarResult,
     documentsResult,
     cabinetResult,
     usageResult,
@@ -710,6 +725,10 @@ export async function loadFamilyCache(familyId, user = null) {
       data,
       error: null,
     })),
+    fetchFamilyRows(client, 'vaccine_schedule_marks', familyId).then((data) => ({
+      data,
+      error: null,
+    })),
     fetchFamilyRows(client, 'medical_documents', familyId).then((data) => ({
       data,
       error: null,
@@ -757,6 +776,8 @@ export async function loadFamilyCache(familyId, user = null) {
   const vaccines = await Promise.all(
     (vaccinesResult.data || []).map((row) => mapVaccineRow(client, row)),
   );
+  const vaccineCalendarMarks =
+    (vaccineCalendarResult.data || []).map(mapVaccineCalendarMarkRow);
   const documents = await Promise.all(
     (documentsResult.data || []).map((row) => mapDocumentRow(client, row)),
   );
@@ -782,6 +803,12 @@ export async function loadFamilyCache(familyId, user = null) {
   setHydratedRows(
     STORAGE_KEYS.vaccines,
     (vaccinesResult.data || []).map(vaccineDatabaseRowForSync),
+  );
+  setHydratedRows(
+    STORAGE_KEYS.vaccineCalendar,
+    vaccineCalendarMarks.map((item) =>
+      vaccineCalendarMarkToRow(item, familyId),
+    ),
   );
   setHydratedRows(
     STORAGE_KEYS.documents,
@@ -814,6 +841,7 @@ export async function loadFamilyCache(familyId, user = null) {
     writeJson(STORAGE_KEYS.treatments, treatments);
     writeJson(STORAGE_KEYS.reminders, reminders);
     writeJson(STORAGE_KEYS.vaccines, vaccines);
+    writeJson(STORAGE_KEYS.vaccineCalendar, vaccineCalendarMarks);
     writeJson(STORAGE_KEYS.documents, documents);
     writeJson(STORAGE_KEYS.medicineCabinet, cabinet);
     writeJson(STORAGE_KEYS.medicineUsage, usage);
@@ -1215,6 +1243,16 @@ function reminderToRow(reminder, familyId) {
   };
 }
 
+function vaccineCalendarMarkToRow(mark, familyId) {
+  return {
+    id: mark.id,
+    family_id: familyId,
+    child_id: mark.childId,
+    schedule_key: mark.scheduleKey,
+    checked_at: mark.checkedAt || new Date().toISOString(),
+  };
+}
+
 function cabinetToRow(item, familyId) {
   return {
     id: item.id,
@@ -1607,6 +1645,18 @@ export async function syncStorageKey(storageKey) {
 
     case STORAGE_KEYS.vaccines:
       await syncVaccines(client, familyId);
+      break;
+
+    case STORAGE_KEYS.vaccineCalendar:
+      await replaceRows(
+        client,
+        'vaccine_schedule_marks',
+        familyId,
+        STORAGE_KEYS.vaccineCalendar,
+        readJson(STORAGE_KEYS.vaccineCalendar, []).map((item) =>
+          vaccineCalendarMarkToRow(item, familyId),
+        ),
+      );
       break;
 
     case STORAGE_KEYS.documents:

@@ -19,6 +19,16 @@ import {
 } from '../../services/vaccinesService.js';
 
 import {
+  getVaccineCalendarMarks,
+  setVaccineCalendarMark,
+} from '../../services/vaccineCalendarService.js';
+
+import {
+  NATIONAL_VACCINE_CALENDAR,
+  NATIONAL_VACCINE_CALENDAR_TOTAL,
+} from '../../utils/vaccineCalendarData.js';
+
+import {
   formatVaccineDate,
   getNextDoseDescription,
   getVaccineState,
@@ -67,6 +77,12 @@ function VaccinesPage() {
   const [vaccines, setVaccines] =
     useState(() => getVaccines());
 
+  const [calendarMarks, setCalendarMarks] =
+    useState(() => getVaccineCalendarMarks());
+
+  const [calendarChildId, setCalendarChildId] =
+    useState(() => children[0]?.id ?? '');
+
   const [searchTerm, setSearchTerm] =
     useState('');
 
@@ -102,6 +118,22 @@ function VaccinesPage() {
       ),
     [children],
   );
+
+  const markedScheduleKeys = useMemo(
+    () =>
+      new Set(
+        calendarMarks
+          .filter(
+            (mark) =>
+              mark.childId === calendarChildId,
+          )
+          .map((mark) => mark.scheduleKey),
+      ),
+    [calendarMarks, calendarChildId],
+  );
+
+  const calendarMarkedCount =
+    markedScheduleKeys.size;
 
   const filteredVaccines = useMemo(
     () => {
@@ -256,6 +288,24 @@ function VaccinesPage() {
     refreshVaccines();
   }
 
+  function handleCalendarToggle(
+    scheduleKey,
+    checked,
+  ) {
+    if (!calendarChildId) {
+      return;
+    }
+
+    const updatedMarks =
+      setVaccineCalendarMark({
+        childId: calendarChildId,
+        scheduleKey,
+        checked,
+      });
+
+    setCalendarMarks(updatedMarks);
+  }
+
   function clearFilters() {
     setChildFilter('all');
     setStatusFilter('all');
@@ -311,6 +361,166 @@ function VaccinesPage() {
           </Link>
         </section>
       )}
+
+      {children.length > 0 && (
+        <section className="vaccine-calendar">
+          <header className="vaccine-calendar__header">
+            <div>
+              <span>Calendario nacional</span>
+              <h3>
+                Vacunas por edad
+              </h3>
+              <p>
+                Se muestran todas las etapas, desde el nacimiento hasta los 20 años.
+              </p>
+            </div>
+
+            <div className="vaccine-calendar__child-selector">
+              <label htmlFor="vaccineCalendarChild">
+                Calendario de
+              </label>
+
+              <select
+                id="vaccineCalendarChild"
+                value={calendarChildId}
+                onChange={(event) =>
+                  setCalendarChildId(
+                    event.target.value,
+                  )
+                }
+              >
+                {children.map((child) => (
+                  <option
+                    key={child.id}
+                    value={child.id}
+                  >
+                    {child.fullName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </header>
+
+          <div className="vaccine-calendar__progress">
+            <div>
+              <strong>
+                {calendarMarkedCount} de{' '}
+                {NATIONAL_VACCINE_CALENDAR_TOTAL}
+              </strong>
+              <span>
+                marcadas como aplicadas
+              </span>
+            </div>
+
+            <div
+              className="vaccine-calendar__progress-track"
+              aria-hidden="true"
+            >
+              <span
+                style={{
+                  width: `${Math.round(
+                    (calendarMarkedCount /
+                      NATIONAL_VACCINE_CALENDAR_TOTAL) *
+                      100,
+                  )}%`,
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="vaccine-calendar__groups">
+            {NATIONAL_VACCINE_CALENDAR.map(
+              (group) => (
+                <section
+                  key={group.id}
+                  className="vaccine-calendar__group"
+                >
+                  <div className="vaccine-calendar__age">
+                    <span>
+                      {group.ageLabel}
+                    </span>
+                  </div>
+
+                  <div className="vaccine-calendar__items">
+                    {group.items.map(
+                      (item) => {
+                        const isMarked =
+                          markedScheduleKeys.has(
+                            item.key,
+                          );
+
+                        return (
+                          <label
+                            key={item.key}
+                            className={`vaccine-calendar__item ${
+                              isMarked
+                                ? 'is-checked'
+                                : ''
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isMarked}
+                              onChange={(event) =>
+                                handleCalendarToggle(
+                                  item.key,
+                                  event.target.checked,
+                                )
+                              }
+                            />
+
+                            <span className="vaccine-calendar__checkbox">
+                              <i className="bi bi-check-lg" />
+                            </span>
+
+                            <span className="vaccine-calendar__item-content">
+                              <span className="vaccine-calendar__item-title">
+                                <strong>
+                                  {item.name}
+                                </strong>
+
+                                {item.conditional && (
+                                  <small>
+                                    Solo si corresponde
+                                  </small>
+                                )}
+                              </span>
+
+                              <span className="vaccine-calendar__item-note">
+                                {item.note}
+                              </span>
+                            </span>
+
+                            {isMarked && (
+                              <span className="vaccine-calendar__applied-label">
+                                Aplicada
+                              </span>
+                            )}
+                          </label>
+                        );
+                      },
+                    )}
+                  </div>
+                </section>
+              ),
+            )}
+          </div>
+
+          <p className="vaccine-calendar__source-note">
+            Las vacunas condicionadas por zona o factores de riesgo se muestran como “Solo si corresponde”.
+          </p>
+        </section>
+      )}
+
+      <section className="vaccines-records-heading">
+        <div>
+          <span>Registro detallado</span>
+          <h3>Mis vacunas registradas</h3>
+          <p>
+            Conservamos el registro manual para fechas, dosis, observaciones y comprobantes.
+          </p>
+        </div>
+      </section>
 
       <section className="vaccines-statistics">
         <article>
