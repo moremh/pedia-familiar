@@ -440,3 +440,215 @@
     justify-content: center;
   }
 }
+/* NOTIFICACIONES PUSH */
+
+.family-settings-push {
+  overflow: hidden;
+}
+
+.family-settings-push__status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid #dfe8ec;
+  border-radius: 15px;
+  background: #f8fbfc;
+}
+
+.family-settings-push__status-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: #eef2f4;
+  color: #7c8d99;
+  font-size: 1.08rem;
+  place-items: center;
+}
+
+.family-settings-push__status-icon.is-active {
+  background: #e6f4eb;
+  color: #4c8b61;
+}
+
+.family-settings-push__status > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.family-settings-push__status strong {
+  color: #344b5d;
+  font-size: 0.78rem;
+}
+
+.family-settings-push__status p {
+  margin: 4px 0 0;
+  color: #7e8e9a;
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+
+.family-settings-push__status .btn {
+  display: inline-flex;
+  min-height: 42px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 7px;
+  border-radius: 11px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.family-settings-push__options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+}
+
+.family-settings-push__options label,
+.family-settings-push__privacy {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 14px;
+  border: 1px solid #dfe7eb;
+  border-radius: 14px;
+  background: #fafcfd;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.family-settings-push__options label:hover,
+.family-settings-push__privacy:hover {
+  border-color: #b9d5dc;
+  background: #f5fafb;
+}
+
+.family-settings-push__options label.is-selected,
+.family-settings-push__privacy.is-selected {
+  border-color: #9bc8d2;
+  background: #eff8fa;
+  box-shadow: inset 0 0 0 1px rgba(50, 127, 145, 0.04);
+}
+
+.family-settings-push__options input,
+.family-settings-push__privacy input {
+  margin-top: 3px;
+  accent-color: #327f91;
+}
+
+.family-settings-push__options label > i,
+.family-settings-push__privacy > i {
+  display: grid;
+  width: 35px;
+  height: 35px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: #e8f3f5;
+  color: #327f91;
+  place-items: center;
+}
+
+.family-settings-push__options label > span,
+.family-settings-push__privacy > span {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.family-settings-push__options strong,
+.family-settings-push__privacy strong {
+  color: #42586a;
+  font-size: 0.71rem;
+}
+
+.family-settings-push__options small,
+.family-settings-push__privacy small {
+  margin-top: 4px;
+  color: #85949f;
+  font-size: 0.61rem;
+  line-height: 1.45;
+}
+
+.family-settings-push__privacy {
+  margin-top: 12px;
+}
+
+.family-settings-push__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.family-settings-push__actions .btn {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 7px;
+  border-radius: 11px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.family-settings-push__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 15px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f4f7f8;
+  color: #72838f;
+}
+
+.family-settings-push__note i {
+  margin-top: 1px;
+  color: #537b87;
+}
+
+.family-settings-push__note p {
+  margin: 0;
+  font-size: 0.62rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+  .family-settings-push__status {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .family-settings-push__status .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .family-settings-push__options {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .family-settings-push__status {
+    padding: 14px;
+  }
+
+  .family-settings-push__actions {
+    flex-direction: column;
+  }
+
+  .family-settings-push__actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

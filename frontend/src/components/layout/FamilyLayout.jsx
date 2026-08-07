@@ -19,6 +19,10 @@ import {
   getSubscriptionAccessState,
 } from '../../services/subscriptionService.js';
 
+import {
+  refreshCurrentPushSubscription,
+} from '../../services/pushNotificationsService.js';
+
 import '../../styles/family-layout.css';
 
 function FamilyLayout() {
@@ -54,6 +58,14 @@ function FamilyLayout() {
     location.pathname,
     refreshSubscription,
   ]);
+
+  useEffect(() => {
+    if (!accessState.allowed) {
+      return;
+    }
+
+    refreshCurrentPushSubscription();
+  }, [accessState.allowed]);
 
   useEffect(() => {
     document.body.classList.toggle(

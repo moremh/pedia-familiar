@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mipeque-shell-v2';
+const CACHE_NAME = 'mipeque-shell-v3';
 
 const APP_SHELL = [
   '/',
@@ -14,7 +14,9 @@ const APP_SHELL = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)),
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cache.addAll(APP_SHELL)),
   );
 
   self.skipWaiting();
@@ -27,8 +29,13 @@ self.addEventListener('activate', (event) => {
       .then((cacheNames) =>
         Promise.all(
           cacheNames
-            .filter((cacheName) => cacheName !== CACHE_NAME)
-            .map((cacheName) => caches.delete(cacheName)),
+            .filter(
+              (cacheName) =>
+                cacheName !== CACHE_NAME,
+            )
+            .map((cacheName) =>
+              caches.delete(cacheName),
+            ),
         ),
       ),
   );
@@ -45,7 +52,9 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.match('/')),
+      fetch(request).catch(() =>
+        caches.match('/'),
+      ),
     );
 
     return;
@@ -53,29 +62,155 @@ self.addEventListener('fetch', (event) => {
 
   const requestUrl = new URL(request.url);
 
-  if (requestUrl.origin !== self.location.origin) {
+  if (
+    requestUrl.origin !==
+    self.location.origin
+  ) {
     return;
   }
 
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-
-      return fetch(request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200) {
-          return networkResponse;
+    caches
+      .match(request)
+      .then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
         }
 
-        const responseCopy = networkResponse.clone();
+        return fetch(request).then(
+          (networkResponse) => {
+            if (
+              !networkResponse ||
+              networkResponse.status !== 200
+            ) {
+              return networkResponse;
+            }
 
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(request, responseCopy);
-        });
+            const responseCopy =
+              networkResponse.clone();
 
-        return networkResponse;
-      });
-    }),
+            caches
+              .open(CACHE_NAME)
+              .then((cache) => {
+                cache.put(
+                  request,
+                  responseCopy,
+                );
+              });
+
+            return networkResponse;
+          },
+        );
+      }),
   );
 });
+
+self.addEventListener('push', (event) => {
+  let payload = {};
+
+  try {
+    payload = event.data
+      ? event.data.json()
+      : {};
+  } catch {
+    payload = {
+      title: 'MiPeque',
+      body: event.data?.text() || '',
+    };
+  }
+
+  const title =
+    payload.title || 'MiPeque';
+
+  const body =
+    payload.body ||
+    'Tenés una nueva notificación.';
+
+  const url =
+    payload.url || '/dashboard/alerts';
+
+  const options = {
+    body,
+    icon:
+      payload.icon ||
+      '/icons/icon-192.png',
+    badge:
+      payload.badge ||
+      '/icons/favicon-32x32.png',
+    tag:
+      payload.tag ||
+      `mipeque-${Date.now()}`,
+    renotify: false,
+    silent: false,
+    data: {
+      url,
+      category:
+        payload.category || '',
+      referenceId:
+        payload.referenceId || '',
+    },
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(
+      title,
+      options,
+    ),
+  );
+});
+
+self.addEventListener(
+  'notificationclick',
+  (event) => {
+    event.notification.close();
+
+    const destination =
+      event.notification.data?.url ||
+      '/dashboard/alerts';
+
+    const absoluteDestination = new URL(
+      destination,
+      self.location.origin,
+    ).href;
+
+    event.waitUntil(
+      self.clients
+        .matchAll({
+          type: 'window',
+          includeUncontrolled: true,
+        })
+        .then(async (clientList) => {
+          for (const client of clientList) {
+            if (
+              'focus' in client &&
+              new URL(client.url).origin ===
+                self.location.origin
+            ) {
+              if ('navigate' in client) {
+                try {
+                  await client.navigate(
+                    absoluteDestination,
+                  );
+                } catch {
+                  // Algunos navegadores no permiten
+                  // navegar un cliente en este punto.
+                }
+              }
+
+              return client.focus();
+            }
+          }
+
+          if (
+            self.clients.openWindow
+          ) {
+            return self.clients.openWindow(
+              absoluteDestination,
+            );
+          }
+
+          return null;
+        }),
+    );
+  },
+);

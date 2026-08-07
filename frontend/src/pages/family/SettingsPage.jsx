@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useRef,
   useState,
 } from 'react';
@@ -31,6 +32,15 @@ import {
   resetFamilySettings,
   saveFamilySettings,
 } from '../../services/familySettingsService.js';
+
+import {
+  DEFAULT_PUSH_PREFERENCES,
+  disablePushNotifications,
+  enablePushNotifications,
+  getPushNotificationState,
+  savePushNotificationPreferences,
+  sendTestPushNotification,
+} from '../../services/pushNotificationsService.js';
 
 import '../../styles/settings.css';
 
@@ -67,6 +77,32 @@ function SettingsPage() {
   const [isDeleting, setIsDeleting] =
     useState(false);
 
+  const [pushState, setPushState] =
+    useState({
+      loading: true,
+      supported: false,
+      subscribed: false,
+      permission: 'default',
+      iosNeedsInstall: false,
+      apiSupported: true,
+      vapidConfigured: true,
+      secureContext: true,
+      preferences: {
+        ...DEFAULT_PUSH_PREFERENCES,
+      },
+    });
+
+  const [pushPreferences, setPushPreferences] =
+    useState({
+      ...DEFAULT_PUSH_PREFERENCES,
+    });
+
+  const [isUpdatingPush, setIsUpdatingPush] =
+    useState(false);
+
+  const [isTestingPush, setIsTestingPush] =
+    useState(false);
+
   const [dataCounts] = useState(() => ({
     children: getChildren().length,
     consultations:
@@ -80,6 +116,49 @@ function SettingsPage() {
     documents: getDocuments().length,
     caregivers: getCaregivers().length,
   }));
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPushState() {
+      try {
+        const state =
+          await getPushNotificationState();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setPushState({
+          loading: false,
+          ...state,
+        });
+
+        setPushPreferences({
+          ...DEFAULT_PUSH_PREFERENCES,
+          ...state.preferences,
+        });
+      } catch (error) {
+        console.error(
+          'No se pudo cargar el estado de las notificaciones push.',
+          error,
+        );
+
+        if (isMounted) {
+          setPushState((currentState) => ({
+            ...currentState,
+            loading: false,
+          }));
+        }
+      }
+    }
+
+    loadPushState();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function showMessage(type, text) {
     setMessage({
@@ -187,6 +266,133 @@ function SettingsPage() {
       'success',
       'La configuración familiar se guardó correctamente.',
     );
+  }
+
+  function handlePushPreferenceChange(event) {
+    const { name, checked } = event.target;
+
+    setPushPreferences((currentPreferences) => ({
+      ...currentPreferences,
+      [name]: checked,
+    }));
+  }
+
+  async function refreshPushState() {
+    const state =
+      await getPushNotificationState();
+
+    setPushState({
+      loading: false,
+      ...state,
+    });
+
+    setPushPreferences({
+      ...DEFAULT_PUSH_PREFERENCES,
+      ...state.preferences,
+    });
+
+    return state;
+  }
+
+  async function handleEnablePush() {
+    setIsUpdatingPush(true);
+
+    try {
+      await enablePushNotifications(
+        pushPreferences,
+      );
+
+      await refreshPushState();
+
+      showMessage(
+        'success',
+        'Las notificaciones quedaron activadas en este dispositivo.',
+      );
+    } catch (error) {
+      showMessage(
+        'error',
+        error.message ||
+          'No se pudieron activar las notificaciones.',
+      );
+    } finally {
+      setIsUpdatingPush(false);
+    }
+  }
+
+  async function handleSavePushPreferences() {
+    setIsUpdatingPush(true);
+
+    try {
+      await savePushNotificationPreferences(
+        pushPreferences,
+      );
+
+      await refreshPushState();
+
+      showMessage(
+        'success',
+        'Las preferencias de notificaciones se guardaron correctamente.',
+      );
+    } catch (error) {
+      showMessage(
+        'error',
+        error.message ||
+          'No se pudieron guardar las preferencias de notificaciones.',
+      );
+    } finally {
+      setIsUpdatingPush(false);
+    }
+  }
+
+  async function handleDisablePush() {
+    const confirmed = window.confirm(
+      '¿Querés dejar de recibir notificaciones de MiPeque en este dispositivo?',
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsUpdatingPush(true);
+
+    try {
+      await disablePushNotifications();
+      await refreshPushState();
+
+      showMessage(
+        'success',
+        'Las notificaciones se desactivaron en este dispositivo.',
+      );
+    } catch (error) {
+      showMessage(
+        'error',
+        error.message ||
+          'No se pudieron desactivar las notificaciones.',
+      );
+    } finally {
+      setIsUpdatingPush(false);
+    }
+  }
+
+  async function handleTestPush() {
+    setIsTestingPush(true);
+
+    try {
+      await sendTestPushNotification();
+
+      showMessage(
+        'success',
+        'La notificación de prueba fue enviada. Puede tardar unos segundos en aparecer.',
+      );
+    } catch (error) {
+      showMessage(
+        'error',
+        error.message ||
+          'No se pudo enviar la notificación de prueba.',
+      );
+    } finally {
+      setIsTestingPush(false);
+    }
   }
 
   function handleResetSettings() {
@@ -754,6 +960,313 @@ function SettingsPage() {
                 </small>
               </span>
             </label>
+          </div>
+        </section>
+
+        <section className="family-settings-section family-settings-push">
+          <header className="family-settings-section__header">
+            <span>
+              <i className="bi bi-phone-vibrate" />
+            </span>
+
+            <div>
+              <h3>Notificaciones push</h3>
+
+              <p>
+                Recibí avisos aunque MiPeque esté cerrada.
+                La activación se realiza por dispositivo.
+              </p>
+            </div>
+          </header>
+
+          <div className="family-settings-push__status">
+            <span
+              className={`family-settings-push__status-icon ${
+                pushState.subscribed
+                  ? 'is-active'
+                  : ''
+              }`}
+            >
+              <i
+                className={`bi ${
+                  pushState.subscribed
+                    ? 'bi-bell-fill'
+                    : 'bi-bell-slash'
+                }`}
+              />
+            </span>
+
+            <div>
+              <strong>
+                {pushState.loading
+                  ? 'Revisando este dispositivo...'
+                  : pushState.subscribed
+                    ? 'Notificaciones activadas'
+                    : 'Notificaciones desactivadas'}
+              </strong>
+
+              <p>
+                {pushState.iosNeedsInstall
+                  ? 'En iPhone o iPad, primero agregá MiPeque a la pantalla de inicio y abrila desde su ícono.'
+                  : pushState.permission === 'denied'
+                    ? 'El permiso está bloqueado desde la configuración del navegador o del sistema.'
+                    : !pushState.secureContext
+                      ? 'Las notificaciones push requieren HTTPS.'
+                      : !pushState.apiSupported
+                        ? 'Este navegador no admite notificaciones push.'
+                        : !pushState.vapidConfigured
+                          ? 'Falta configurar la clave pública VAPID del proyecto.'
+                          : pushState.subscribed
+                            ? 'Este dispositivo recibirá los avisos seleccionados abajo.'
+                            : 'Activá las notificaciones para comenzar a recibir avisos en este dispositivo.'}
+              </p>
+            </div>
+
+            {!pushState.subscribed && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleEnablePush}
+                disabled={
+                  pushState.loading ||
+                  isUpdatingPush ||
+                  pushState.permission === 'denied' ||
+                  !pushState.supported
+                }
+              >
+                <i className="bi bi-bell" />
+                {isUpdatingPush
+                  ? 'Activando...'
+                  : 'Activar en este dispositivo'}
+              </button>
+            )}
+          </div>
+
+          <div className="family-settings-push__options">
+            <label
+              className={
+                pushPreferences.notifyMedicationDue
+                  ? 'is-selected'
+                  : ''
+              }
+            >
+              <input
+                type="checkbox"
+                name="notifyMedicationDue"
+                checked={
+                  pushPreferences.notifyMedicationDue
+                }
+                onChange={handlePushPreferenceChange}
+              />
+
+              <i className="bi bi-capsule-pill" />
+
+              <span>
+                <strong>Tomas programadas</strong>
+                <small>
+                  Avisar antes o al llegar la hora de una toma.
+                </small>
+              </span>
+            </label>
+
+            <label
+              className={
+                pushPreferences.notifyMedicationOverdue
+                  ? 'is-selected'
+                  : ''
+              }
+            >
+              <input
+                type="checkbox"
+                name="notifyMedicationOverdue"
+                checked={
+                  pushPreferences.notifyMedicationOverdue
+                }
+                onChange={handlePushPreferenceChange}
+              />
+
+              <i className="bi bi-clock-history" />
+
+              <span>
+                <strong>Tomas atrasadas</strong>
+                <small>
+                  Avisar cuando una toma siga sin registrarse.
+                </small>
+              </span>
+            </label>
+
+            <label
+              className={
+                pushPreferences.notifyVaccines
+                  ? 'is-selected'
+                  : ''
+              }
+            >
+              <input
+                type="checkbox"
+                name="notifyVaccines"
+                checked={
+                  pushPreferences.notifyVaccines
+                }
+                onChange={handlePushPreferenceChange}
+              />
+
+              <i className="bi bi-shield-plus" />
+
+              <span>
+                <strong>Vacunas</strong>
+                <small>
+                  Avisar por las próximas dosis con fecha registrada.
+                </small>
+              </span>
+            </label>
+
+            <label
+              className={
+                pushPreferences.notifyExpirations
+                  ? 'is-selected'
+                  : ''
+              }
+            >
+              <input
+                type="checkbox"
+                name="notifyExpirations"
+                checked={
+                  pushPreferences.notifyExpirations
+                }
+                onChange={handlePushPreferenceChange}
+              />
+
+              <i className="bi bi-calendar-x" />
+
+              <span>
+                <strong>Vencimientos</strong>
+                <small>
+                  Avisar por medicamentos próximos a vencer.
+                </small>
+              </span>
+            </label>
+
+            <label
+              className={
+                pushPreferences.notifyStock
+                  ? 'is-selected'
+                  : ''
+              }
+            >
+              <input
+                type="checkbox"
+                name="notifyStock"
+                checked={
+                  pushPreferences.notifyStock
+                }
+                onChange={handlePushPreferenceChange}
+              />
+
+              <i className="bi bi-box-seam" />
+
+              <span>
+                <strong>Poco stock</strong>
+                <small>
+                  Avisar cuando un medicamento llegue al mínimo configurado.
+                </small>
+              </span>
+            </label>
+
+            <label
+              className={
+                pushPreferences.notifyFollowups
+                  ? 'is-selected'
+                  : ''
+              }
+            >
+              <input
+                type="checkbox"
+                name="notifyFollowups"
+                checked={
+                  pushPreferences.notifyFollowups
+                }
+                onChange={handlePushPreferenceChange}
+              />
+
+              <i className="bi bi-clipboard2-pulse" />
+
+              <span>
+                <strong>Seguimientos médicos</strong>
+                <small>
+                  Avisar por fechas de seguimiento registradas en consultas.
+                </small>
+              </span>
+            </label>
+          </div>
+
+          <label
+            className={`family-settings-push__privacy ${
+              pushPreferences.showDetails
+                ? 'is-selected'
+                : ''
+            }`}
+          >
+            <input
+              type="checkbox"
+              name="showDetails"
+              checked={pushPreferences.showDetails}
+              onChange={handlePushPreferenceChange}
+            />
+
+            <i className="bi bi-lock" />
+
+            <span>
+              <strong>Mostrar detalles en la notificación</strong>
+              <small>
+                Si está desactivado, la pantalla bloqueada mostrará un aviso general sin nombres de hijos ni medicamentos.
+              </small>
+            </span>
+          </label>
+
+          {pushState.subscribed && (
+            <div className="family-settings-push__actions">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleSavePushPreferences}
+                disabled={isUpdatingPush}
+              >
+                <i className="bi bi-check-lg" />
+                {isUpdatingPush
+                  ? 'Guardando...'
+                  : 'Guardar preferencias'}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-outline-primary"
+                onClick={handleTestPush}
+                disabled={isTestingPush}
+              >
+                <i className="bi bi-send" />
+                {isTestingPush
+                  ? 'Enviando...'
+                  : 'Enviar prueba'}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-outline-danger"
+                onClick={handleDisablePush}
+                disabled={isUpdatingPush}
+              >
+                <i className="bi bi-bell-slash" />
+                Desactivar
+              </button>
+            </div>
+          )}
+
+          <div className="family-settings-push__note">
+            <i className="bi bi-info-circle" />
+            <p>
+              El sonido depende del dispositivo, del modo silencio y de No molestar. Las notificaciones sirven como apoyo y pueden demorarse si el sistema restringe la conexión en segundo plano.
+            </p>
           </div>
         </section>
 

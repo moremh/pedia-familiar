@@ -577,6 +577,21 @@ export async function registerFamilyAccount({
 export async function logoutUser() {
   if (isSupabaseConfigured) {
     try {
+      const {
+        detachCurrentPushSubscription,
+      } = await import(
+        './pushNotificationsService.js'
+      );
+
+      await detachCurrentPushSubscription();
+    } catch (error) {
+      console.error(
+        'No se pudo desvincular el dispositivo de las notificaciones antes de cerrar sesión.',
+        error,
+      );
+    }
+
+    try {
       await flushPendingRemoteSync();
     } catch (error) {
       console.error(
