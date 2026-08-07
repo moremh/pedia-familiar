@@ -228,6 +228,10 @@ function mapFamilyRow(row, ownerProfile = null, primaryCaregiver = null) {
     subscriptionStartedAt: row.current_period_start || '',
     subscriptionEndsAt: row.current_period_end || '',
     childrenCount: Number(row.children_count || 0),
+    childrenLimitOverride:
+      row.children_limit_override == null
+        ? null
+        : Number(row.children_limit_override),
     membersCount: Number(row.members_count || 0),
     updatedAt: row.updated_at,
   };

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import ChildCard from '../../components/cards/ChildCard.jsx';
 import ChildForm from '../../components/forms/ChildForm.jsx';
@@ -9,6 +9,12 @@ import {
   getChildren,
   updateChild,
 } from '../../services/childrenService.js';
+
+import {
+  assertCanAddChild,
+  getCurrentFamilyChildCapacity,
+  getDefaultFamilyChildCapacity,
+} from '../../services/familyChildrenLimitService.js';
 
 import {
   formatChildAge,
@@ -23,6 +29,16 @@ function ChildrenPage() {
   const [children, setChildren] = useState(() =>
     getChildren(),
   );
+
+  const [childCapacity, setChildCapacity] =
+    useState(() =>
+      getDefaultFamilyChildCapacity(
+        getChildren().length,
+      ),
+    );
+
+  const [isLoadingCapacity, setIsLoadingCapacity] =
+    useState(true);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -58,11 +74,73 @@ function ChildrenPage() {
     hasRegisteredAllergies(child.allergies),
   ).length;
 
+  const effectiveChildrenLimit = Math.max(
+    childCapacity.effectiveLimit || 3,
+    children.length,
+  );
+
+  const canAddChild =
+    children.length < effectiveChildrenLimit;
+
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency: 'ARS',
+        maximumFractionDigits: 0,
+      }),
+    [],
+  );
+
+  async function refreshChildCapacity() {
+    try {
+      const capacity =
+        await getCurrentFamilyChildCapacity();
+
+      setChildCapacity({
+        ...capacity,
+        currentCount: children.length,
+        effectiveLimit: Math.max(
+          capacity.effectiveLimit,
+          children.length,
+        ),
+      });
+    } catch (error) {
+      console.error(
+        'No se pudo cargar el límite de hijos.',
+        error,
+      );
+
+      setChildCapacity(
+        getDefaultFamilyChildCapacity(
+          children.length,
+        ),
+      );
+    } finally {
+      setIsLoadingCapacity(false);
+    }
+  }
+
+  useEffect(() => {
+    refreshChildCapacity();
+  }, []);
+
   function refreshChildren() {
     setChildren(getChildren());
   }
 
   function openCreateForm() {
+    if (!canAddChild) {
+      window.alert(
+        `La familia ya alcanzó el límite de ${effectiveChildrenLimit} ${
+          effectiveChildrenLimit === 1
+            ? 'hijo'
+            : 'hijos'
+        }. Administración debe habilitar un cupo adicional para agregar otro perfil.`,
+      );
+      return;
+    }
+
     setEditingChild(null);
     setIsFormOpen(true);
   }
@@ -78,15 +156,40 @@ function ChildrenPage() {
     setIsFormOpen(false);
   }
 
-  function handleSaveChild(childData) {
-    if (editingChild) {
-      updateChild(editingChild.id, childData);
-    } else {
-      createChild(childData);
-    }
+  async function handleSaveChild(childData) {
+    try {
+      if (editingChild) {
+        updateChild(editingChild.id, childData);
+      } else {
+        await assertCanAddChild();
+        createChild(childData);
+      }
 
-    refreshChildren();
-    closeForm();
+      const updatedChildren = getChildren();
+      setChildren(updatedChildren);
+
+      setChildCapacity((current) => ({
+        ...current,
+        currentCount: updatedChildren.length,
+        effectiveLimit: Math.max(
+          current.effectiveLimit || 3,
+          updatedChildren.length,
+        ),
+        canAdd:
+          updatedChildren.length <
+          Math.max(
+            current.effectiveLimit || 3,
+            updatedChildren.length,
+          ),
+      }));
+
+      closeForm();
+    } catch (error) {
+      window.alert(
+        error.message ||
+          'No se pudo guardar el perfil infantil.',
+      );
+    }
   }
 
   function handleDeleteChild(child) {
@@ -104,7 +207,18 @@ function ChildrenPage() {
       setSelectedChild(null);
     }
 
-    refreshChildren();
+    const updatedChildren = getChildren();
+    setChildren(updatedChildren);
+    setChildCapacity((current) => ({
+      ...current,
+      currentCount: updatedChildren.length,
+      canAdd:
+        updatedChildren.length <
+        Math.max(
+          current.effectiveLimit || 3,
+          updatedChildren.length,
+        ),
+    }));
   }
 
   return (
@@ -124,10 +238,71 @@ function ChildrenPage() {
           type="button"
           className="btn btn-primary"
           onClick={openCreateForm}
+          disabled={
+            isLoadingCapacity ||
+            !canAddChild
+          }
         >
           <i className="bi bi-person-plus" />
           Agregar hijo
         </button>
+      </section>
+
+      <section
+        className={`children-capacity ${
+          canAddChild
+            ? ''
+            : 'children-capacity--full'
+        }`}
+      >
+        <div className="children-capacity__icon">
+          <i
+            className={`bi ${
+              canAddChild
+                ? 'bi-people'
+                : 'bi-lock'
+            }`}
+          />
+        </div>
+
+        <div className="children-capacity__content">
+          <span>Cupo de perfiles infantiles</span>
+
+          <strong>
+            {children.length} de {effectiveChildrenLimit}{' '}
+            {effectiveChildrenLimit === 1
+              ? 'hijo permitido'
+              : 'hijos permitidos'}
+          </strong>
+
+          <p>
+            {canAddChild
+              ? `Tu familia puede agregar ${effectiveChildrenLimit - children.length} ${
+                  effectiveChildrenLimit - children.length === 1
+                    ? 'perfil más'
+                    : 'perfiles más'
+                }.`
+              : `Alcanzaste el límite actual. Para agregar otro hijo, administración debe habilitar un cupo adicional. Valor actual por hijo extra: ${currencyFormatter.format(
+                  childCapacity.extraChildPrice || 0,
+                )}.`}
+          </p>
+        </div>
+
+        <div className="children-capacity__progress">
+          <span
+            style={{
+              width: `${Math.min(
+                100,
+                (children.length /
+                  Math.max(
+                    effectiveChildrenLimit,
+                    1,
+                  )) *
+                  100,
+              )}%`,
+            }}
+          />
+        </div>
       </section>
 
       <section className="children-statistics">

@@ -12,6 +12,7 @@ import {
   getAdminPayments,
   reactivateFamily,
   refreshAdminData,
+  setFamilyChildrenLimit,
   suspendFamily,
 } from '../../services/adminFamiliesService.js';
 
@@ -183,6 +184,36 @@ const DEFAULT_COMMERCIAL_PLANS = {
   },
 };
 
+const DEFAULT_CHILD_SETTINGS = {
+  baseChildrenLimit: 3,
+  extraChildPrice: 5000,
+};
+
+function getEffectiveFamilyChildLimit(
+  family,
+  childSettings,
+) {
+  const baseLimit = Math.max(
+    1,
+    Number(
+      childSettings?.baseChildrenLimit ?? 3,
+    ) || 3,
+  );
+
+  const configuredLimit = Math.max(
+    baseLimit,
+    Number(
+      family?.childrenLimitOverride ??
+        baseLimit,
+    ) || baseLimit,
+  );
+
+  return Math.max(
+    Number(family?.childrenCount || 0),
+    configuredLimit,
+  );
+}
+
 function AdminDashboardPage() {
   const navigate = useNavigate();
   const [families, setFamilies] =
@@ -193,6 +224,9 @@ function AdminDashboardPage() {
 
   const [commercialPlans, setCommercialPlans] =
     useState(DEFAULT_COMMERCIAL_PLANS);
+
+  const [childSettings, setChildSettings] =
+    useState(DEFAULT_CHILD_SETTINGS);
 
   const [searchTerm, setSearchTerm] =
     useState('');
@@ -423,6 +457,76 @@ function AdminDashboardPage() {
     }
   }
 
+  async function handleAdjustChildrenLimit(
+    family,
+    change,
+  ) {
+    const baseLimit = Math.max(
+      1,
+      Number(
+        childSettings.baseChildrenLimit || 3,
+      ),
+    );
+
+    const currentLimit =
+      getEffectiveFamilyChildLimit(
+        family,
+        childSettings,
+      );
+
+    const nextLimit = Math.max(
+      baseLimit,
+      currentLimit + change,
+    );
+
+    if (
+      change < 0 &&
+      nextLimit < family.childrenCount
+    ) {
+      window.alert(
+        'No podés reducir el cupo por debajo de la cantidad de hijos que la familia ya tiene registrados.',
+      );
+      return;
+    }
+
+    if (nextLimit === currentLimit) {
+      return;
+    }
+
+    const extraPrice = Math.max(
+      0,
+      Number(
+        childSettings.extraChildPrice || 0,
+      ),
+    );
+
+    const confirmed = window.confirm(
+      change > 0
+        ? `¿Habilitar un cupo adicional para ${family.familyName}? El límite pasará de ${currentLimit} a ${nextLimit} hijos. Valor de referencia del cupo extra: ${currencyFormatter.format(extraPrice)}.`
+        : `¿Reducir el límite de ${family.familyName} de ${currentLimit} a ${nextLimit} hijos?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await setFamilyChildrenLimit(
+        family.id,
+        nextLimit === baseLimit
+          ? null
+          : nextLimit,
+      );
+
+      refreshData();
+    } catch (error) {
+      window.alert(
+        error.message ||
+          'No se pudo modificar el límite de hijos.',
+      );
+    }
+  }
+
   return (
     <main className="admin-dashboard">
       <header className="admin-dashboard__header">
@@ -541,6 +645,7 @@ function AdminDashboardPage() {
 
       <CommercialSettingsPanel
         onPlansChange={setCommercialPlans}
+        onChildSettingsChange={setChildSettings}
       />
 
       <section className="admin-dashboard__panel">
@@ -748,9 +853,12 @@ function AdminDashboardPage() {
                         <dt>Hijos</dt>
 
                         <dd>
-                          {
-                            family.childrenCount
-                          }
+                          {family.childrenCount}{' '}
+                          /{' '}
+                          {getEffectiveFamilyChildLimit(
+                            family,
+                            childSettings,
+                          )}
                         </dd>
                       </div>
 
@@ -1133,6 +1241,105 @@ function AdminDashboardPage() {
                     </dd>
                   </div>
                 </dl>
+              </section>
+
+              <section className="admin-detail-section admin-detail-section--children-limit">
+                <h3>
+                  <i className="bi bi-people" />
+                  Cupo de hijos
+                </h3>
+
+                {(() => {
+                  const baseLimit = Math.max(
+                    1,
+                    Number(
+                      childSettings.baseChildrenLimit || 3,
+                    ),
+                  );
+
+                  const effectiveLimit =
+                    getEffectiveFamilyChildLimit(
+                      selectedFamily,
+                      childSettings,
+                    );
+
+                  const extraSlots = Math.max(
+                    effectiveLimit - baseLimit,
+                    0,
+                  );
+
+                  const extraPrice = Math.max(
+                    0,
+                    Number(
+                      childSettings.extraChildPrice || 0,
+                    ),
+                  );
+
+                  return (
+                    <>
+                      <div className="admin-children-limit__summary">
+                        <div>
+                          <small>Perfiles usados</small>
+                          <strong>
+                            {selectedFamily.childrenCount} de {effectiveLimit}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <small>Incluidos</small>
+                          <strong>{baseLimit}</strong>
+                        </div>
+
+                        <div>
+                          <small>Cupos extra</small>
+                          <strong>{extraSlots}</strong>
+                        </div>
+                      </div>
+
+                      <div className="admin-children-limit__price">
+                        <i className="bi bi-cash-coin" />
+                        <span>
+                          Valor de referencia por cada hijo extra:{' '}
+                          <strong>
+                            {currencyFormatter.format(extraPrice)}
+                          </strong>
+                        </span>
+                      </div>
+
+                      <div className="admin-children-limit__actions">
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary"
+                          onClick={() =>
+                            handleAdjustChildrenLimit(
+                              selectedFamily,
+                              -1,
+                            )
+                          }
+                          disabled={effectiveLimit <= baseLimit}
+                        >
+                          <i className="bi bi-dash-lg" />
+                          Quitar 1 cupo
+                        </button>
+
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={() =>
+                            handleAdjustChildrenLimit(
+                              selectedFamily,
+                              1,
+                            )
+                          }
+                          disabled={effectiveLimit >= 20}
+                        >
+                          <i className="bi bi-plus-lg" />
+                          Habilitar +1 hijo
+                        </button>
+                      </div>
+                    </>
+                  );
+                })()}
               </section>
 
               <section className="admin-detail-section">

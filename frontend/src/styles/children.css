@@ -858,3 +858,104 @@
     padding: 15px;
   }
 }
+/* =========================================================
+   CUPO DE PERFILES INFANTILES
+   ========================================================= */
+
+.children-capacity {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+  padding: 16px 18px;
+  border: 1px solid #cfe3e7;
+  border-radius: 17px;
+  background: #f2f9fa;
+}
+
+.children-capacity--full {
+  border-color: #ecd5b5;
+  background: #fff8ee;
+}
+
+.children-capacity__icon {
+  display: grid;
+  width: 45px;
+  height: 45px;
+  border-radius: 13px;
+  background: #dfeff2;
+  color: #327f91;
+  font-size: 1.05rem;
+  place-items: center;
+}
+
+.children-capacity--full .children-capacity__icon {
+  background: #f7e8d2;
+  color: #a66b2c;
+}
+
+.children-capacity__content {
+  min-width: 0;
+}
+
+.children-capacity__content > span {
+  color: #327f91;
+  font-size: 0.61rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.children-capacity--full .children-capacity__content > span {
+  color: #9d672f;
+}
+
+.children-capacity__content strong {
+  display: block;
+  margin-top: 2px;
+  color: #304559;
+  font-size: 0.88rem;
+}
+
+.children-capacity__content p {
+  margin: 4px 0 0;
+  color: #768795;
+  font-size: 0.69rem;
+  line-height: 1.5;
+}
+
+.children-capacity__progress {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  height: 6px;
+  border-radius: 999px;
+  background: #dce9ec;
+}
+
+.children-capacity__progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #4d9aaa;
+  transition: width 180ms ease;
+}
+
+.children-capacity--full .children-capacity__progress {
+  background: #f0dfc8;
+}
+
+.children-capacity--full .children-capacity__progress > span {
+  background: #bd792a;
+}
+
+@media (max-width: 560px) {
+  .children-capacity {
+    padding: 14px;
+  }
+
+  .children-capacity__icon {
+    width: 40px;
+    height: 40px;
+  }
+}

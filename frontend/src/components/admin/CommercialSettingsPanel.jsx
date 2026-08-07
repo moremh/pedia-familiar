@@ -12,6 +12,7 @@ import {
   setPromotionActive,
   updatePromotion,
   updateSubscriptionPlan,
+  updateChildLimitSettings,
 } from '../../services/commercialSettingsService.js';
 
 const currencyFormatter =
@@ -142,6 +143,7 @@ function formatPromotionValue(
 
 function CommercialSettingsPanel({
   onPlansChange,
+  onChildSettingsChange,
 }) {
   const [plans, setPlans] =
     useState([]);
@@ -157,6 +159,12 @@ function CommercialSettingsPanel({
       annualActive: true,
     });
 
+  const [childSettingsForm, setChildSettingsForm] =
+    useState({
+      baseChildrenLimit: 3,
+      extraChildPrice: 5000,
+    });
+
   const [promotionForm, setPromotionForm] =
     useState(
       getDefaultPromotionForm,
@@ -169,6 +177,9 @@ function CommercialSettingsPanel({
     useState(true);
 
   const [isSavingPrices, setIsSavingPrices] =
+    useState(false);
+
+  const [isSavingChildSettings, setIsSavingChildSettings] =
     useState(false);
 
   const [isSavingPromotion, setIsSavingPromotion] =
@@ -224,6 +235,22 @@ function CommercialSettingsPanel({
             )?.isActive !== false,
         });
 
+        setChildSettingsForm({
+          baseChildrenLimit:
+            settings.childSettings
+              ?.baseChildrenLimit ?? 3,
+          extraChildPrice:
+            settings.childSettings
+              ?.extraChildPrice ?? 5000,
+        });
+
+        onChildSettingsChange?.(
+          settings.childSettings || {
+            baseChildrenLimit: 3,
+            extraChildPrice: 5000,
+          },
+        );
+
         onPlansChange?.(
           Object.fromEntries(
             settings.offers.map(
@@ -244,7 +271,10 @@ function CommercialSettingsPanel({
       } finally {
         setIsLoading(false);
       }
-    }, [onPlansChange]);
+    }, [
+      onPlansChange,
+      onChildSettingsChange,
+    ]);
 
   useEffect(() => {
     loadSettings();
@@ -318,6 +348,64 @@ function CommercialSettingsPanel({
       });
     } finally {
       setIsSavingPrices(false);
+    }
+  }
+
+  function handleChildSettingsChange(
+    event,
+  ) {
+    const { name, value } =
+      event.target;
+
+    setChildSettingsForm(
+      (currentForm) => ({
+        ...currentForm,
+        [name]: value,
+      }),
+    );
+  }
+
+  async function handleSaveChildSettings(
+    event,
+  ) {
+    event.preventDefault();
+    setIsSavingChildSettings(true);
+    setFeedback(null);
+
+    try {
+      const updatedSettings =
+        await updateChildLimitSettings({
+          baseChildrenLimit:
+            childSettingsForm.baseChildrenLimit,
+          extraChildPrice:
+            childSettingsForm.extraChildPrice,
+        });
+
+      setChildSettingsForm({
+        baseChildrenLimit:
+          updatedSettings.baseChildrenLimit,
+        extraChildPrice:
+          updatedSettings.extraChildPrice,
+      });
+
+      onChildSettingsChange?.(
+        updatedSettings,
+      );
+
+      setFeedback({
+        type: 'success',
+        message:
+          'El límite de hijos y el valor de los cupos extra se actualizaron correctamente.',
+      });
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        message:
+          error.message ||
+          'No se pudo guardar la configuración de hijos.',
+      });
+    } finally {
+      setIsSavingChildSettings(false);
     }
   }
 
@@ -505,11 +593,11 @@ function CommercialSettingsPanel({
           </span>
 
           <h2>
-            Precios y promociones
+            Precios, cupos y promociones
           </h2>
 
           <p>
-            Los cambios se reflejan en la pantalla de planes y en las nuevas activaciones.
+            Administrá los precios de los planes, el cupo de hijos por familia y las promociones disponibles.
           </p>
         </div>
 
@@ -634,6 +722,90 @@ function CommercialSettingsPanel({
           {isSavingPrices
             ? 'Guardando...'
             : 'Guardar precios'}
+        </button>
+      </form>
+
+      <div className="commercial-divider" />
+
+      <form
+        className="commercial-child-settings"
+        onSubmit={handleSaveChildSettings}
+      >
+        <header className="commercial-child-settings__header">
+          <span>
+            <i className="bi bi-people" />
+          </span>
+
+          <div>
+            <small>Perfiles infantiles</small>
+            <h3>Límite de hijos por familia</h3>
+            <p>
+              Definí cuántos hijos incluye cada familia y el valor de referencia de cada cupo adicional.
+            </p>
+          </div>
+        </header>
+
+        <div className="commercial-child-settings__grid">
+          <label>
+            Hijos incluidos por familia
+            <input
+              type="number"
+              name="baseChildrenLimit"
+              min="1"
+              max="20"
+              step="1"
+              value={childSettingsForm.baseChildrenLimit}
+              onChange={handleChildSettingsChange}
+              required
+            />
+            <small>
+              Este será el límite normal para todas las familias.
+            </small>
+          </label>
+
+          <label>
+            Precio por hijo extra
+            <div className="commercial-child-settings__money">
+              <span>$</span>
+              <input
+                type="number"
+                name="extraChildPrice"
+                min="0"
+                step="1"
+                value={childSettingsForm.extraChildPrice}
+                onChange={handleChildSettingsChange}
+                required
+              />
+            </div>
+            <small>
+              Valor de referencia para habilitar cada cupo adicional.
+            </small>
+          </label>
+        </div>
+
+        <div className="commercial-child-settings__summary">
+          <i className="bi bi-info-circle" />
+          <span>
+            Cada familia incluye hasta{' '}
+            <strong>{childSettingsForm.baseChildrenLimit || 3}</strong>{' '}
+            hijos. Cada cupo extra tendrá un valor de{' '}
+            <strong>
+              {currencyFormatter.format(
+                Number(childSettingsForm.extraChildPrice || 0),
+              )}
+            </strong>.
+          </span>
+        </div>
+
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={isSavingChildSettings}
+        >
+          <i className="bi bi-floppy" />
+          {isSavingChildSettings
+            ? 'Guardando...'
+            : 'Guardar límite de hijos'}
         </button>
       </form>
 

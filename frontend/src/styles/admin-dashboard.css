@@ -883,3 +883,80 @@
     border-radius: 18px;
   }
 }
+/* =========================================================
+   CUPO DE HIJOS POR FAMILIA
+   ========================================================= */
+
+.admin-children-limit__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-children-limit__summary > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 13px;
+  border-radius: 12px;
+  background: #f5f8f9;
+}
+
+.admin-children-limit__summary small {
+  color: #8996a1;
+  font-size: 0.61rem;
+}
+
+.admin-children-limit__summary strong {
+  margin-top: 3px;
+  color: #344a5d;
+  font-size: 0.9rem;
+}
+
+.admin-children-limit__price {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #edf6f8;
+  color: #557787;
+  font-size: 0.68rem;
+}
+
+.admin-children-limit__price i {
+  color: #327f91;
+}
+
+.admin-children-limit__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 13px;
+}
+
+.admin-children-limit__actions .btn {
+  display: inline-flex;
+  min-height: 41px;
+  align-items: center;
+  gap: 7px;
+  border-radius: 11px;
+  font-size: 0.69rem;
+  font-weight: 700;
+}
+
+@media (max-width: 620px) {
+  .admin-children-limit__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-children-limit__actions {
+    flex-direction: column-reverse;
+  }
+
+  .admin-children-limit__actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

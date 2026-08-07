@@ -318,6 +318,61 @@ export async function reactivateFamily(
   );
 }
 
+export async function setFamilyChildrenLimit(
+  familyId,
+  limit,
+) {
+  if (!familyId) {
+    throw new Error(
+      'No se encontró la familia.',
+    );
+  }
+
+  const normalizedLimit =
+    limit === null ||
+    limit === undefined ||
+    limit === ''
+      ? null
+      : Number.parseInt(
+          limit,
+          10,
+        );
+
+  if (
+    normalizedLimit !== null &&
+    (!Number.isInteger(normalizedLimit) ||
+      normalizedLimit < 1 ||
+      normalizedLimit > 20)
+  ) {
+    throw new Error(
+      'El límite de hijos no es válido.',
+    );
+  }
+
+  const client = requireSupabase();
+
+  const { error } = await client.rpc(
+    'set_family_children_limit',
+    {
+      p_family_id: familyId,
+      p_limit: normalizedLimit,
+    },
+  );
+
+  if (error) {
+    throw normalizeRemoteError(
+      error,
+      'No se pudo modificar el límite de hijos.',
+    );
+  }
+
+  await loadAdminCache();
+
+  return getAdminFamilyById(
+    familyId,
+  );
+}
+
 export function updateFamilyStatistics(
   familyId,
   statistics = {},

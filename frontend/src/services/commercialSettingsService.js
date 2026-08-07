@@ -64,6 +64,25 @@ function normalizePromotion(row) {
   };
 }
 
+
+function normalizeChildSettings(row = {}) {
+  return {
+    baseChildrenLimit: Math.max(
+      1,
+      Number(
+        row.base_children_limit ?? 3,
+      ) || 3,
+    ),
+    extraChildPrice: Math.max(
+      0,
+      Number(
+        row.extra_child_price_ars ?? 5000,
+      ) || 0,
+    ),
+    updatedAt: row.updated_at || '',
+  };
+}
+
 function normalizeError(
   error,
   fallback,
@@ -117,6 +136,7 @@ export async function getAdminCommercialSettings() {
   const [
     plansResult,
     promotionsResult,
+    childSettingsResult,
   ] = await Promise.all([
     client
       .from('subscription_plans')
@@ -132,6 +152,12 @@ export async function getAdminCommercialSettings() {
       .order('created_at', {
         ascending: false,
       }),
+
+    client
+      .from('child_limit_settings')
+      .select('*')
+      .eq('id', true)
+      .maybeSingle(),
   ]);
 
   if (plansResult.error) {
@@ -145,6 +171,13 @@ export async function getAdminCommercialSettings() {
     throw normalizeError(
       promotionsResult.error,
       'No se pudieron cargar las promociones.',
+    );
+  }
+
+  if (childSettingsResult.error) {
+    throw normalizeError(
+      childSettingsResult.error,
+      'No se pudo cargar la configuración de hijos.',
     );
   }
 
@@ -176,6 +209,10 @@ export async function getAdminCommercialSettings() {
     promotions: (
       promotionsResult.data || []
     ).map(normalizePromotion),
+    childSettings:
+      normalizeChildSettings(
+        childSettingsResult.data || {},
+      ),
   };
 }
 
@@ -231,6 +268,70 @@ export async function updateSubscriptionPlan(
   notifyCommercialSettingsChanged();
 
   return normalizePlan(data);
+}
+
+export async function updateChildLimitSettings(
+  {
+    baseChildrenLimit,
+    extraChildPrice,
+  },
+) {
+  const normalizedLimit =
+    Number.parseInt(
+      baseChildrenLimit,
+      10,
+    );
+
+  const normalizedPrice =
+    Number.parseInt(
+      extraChildPrice,
+      10,
+    );
+
+  if (
+    !Number.isInteger(normalizedLimit) ||
+    normalizedLimit < 1 ||
+    normalizedLimit > 20
+  ) {
+    throw new Error(
+      'El límite base debe estar entre 1 y 20 hijos.',
+    );
+  }
+
+  if (
+    !Number.isInteger(normalizedPrice) ||
+    normalizedPrice < 0
+  ) {
+    throw new Error(
+      'Ingresá un precio válido para el hijo extra.',
+    );
+  }
+
+  const client = requireSupabase();
+
+  const { data, error } =
+    await client.rpc(
+      'update_child_limit_settings',
+      {
+        p_base_children_limit:
+          normalizedLimit,
+        p_extra_child_price_ars:
+          normalizedPrice,
+      },
+    );
+
+  if (error) {
+    throw normalizeError(
+      error,
+      'No se pudo actualizar la configuración de hijos.',
+    );
+  }
+
+  notifyCommercialSettingsChanged();
+
+  return normalizeChildSettings(
+    data || {},
+  );
 }
 
 function buildPromotionPayload(
