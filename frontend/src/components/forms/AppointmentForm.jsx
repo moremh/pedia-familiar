@@ -4,38 +4,14 @@ import {
 } from 'react';
 
 const REMINDER_OPTIONS = [
-  {
-    value: '0',
-    label: 'A la hora del turno',
-  },
-  {
-    value: '10',
-    label: '10 minutos antes',
-  },
-  {
-    value: '15',
-    label: '15 minutos antes',
-  },
-  {
-    value: '30',
-    label: '30 minutos antes',
-  },
-  {
-    value: '60',
-    label: '1 hora antes',
-  },
-  {
-    value: '120',
-    label: '2 horas antes',
-  },
-  {
-    value: '1440',
-    label: '1 día antes',
-  },
-  {
-    value: 'custom',
-    label: 'Personalizado',
-  },
+  { value: '0', label: 'A la hora del turno' },
+  { value: '10', label: '10 minutos antes' },
+  { value: '15', label: '15 minutos antes' },
+  { value: '30', label: '30 minutos antes' },
+  { value: '60', label: '1 hora antes' },
+  { value: '120', label: '2 horas antes' },
+  { value: '1440', label: '1 día antes' },
+  { value: 'custom', label: 'Personalizado' },
 ];
 
 const emptyForm = {
@@ -47,9 +23,45 @@ const emptyForm = {
   specialty: '',
   medicalCenter: '',
   reminderEnabled: true,
+  reminderMode: 'relative',
   reminderMinutesBefore: 30,
+  reminderDate: '',
+  reminderTime: '',
+  reminderAt: '',
   notes: '',
 };
+
+function toLocalDateTimeParts(value) {
+  if (!value) {
+    return {
+      date: '',
+      time: '',
+    };
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return {
+      date: '',
+      time: '',
+    };
+  }
+
+  const pad = (number) =>
+    String(number).padStart(2, '0');
+
+  return {
+    date:
+      `${date.getFullYear()}-${pad(
+        date.getMonth() + 1,
+      )}-${pad(date.getDate())}`,
+    time:
+      `${pad(date.getHours())}:${pad(
+        date.getMinutes(),
+      )}`,
+  };
+}
 
 function AppointmentForm({
   children,
@@ -69,6 +81,11 @@ function AppointmentForm({
     useState('');
 
   useEffect(() => {
+    const exactParts =
+      toLocalDateTimeParts(
+        initialData?.reminderAt,
+      );
+
     const next = initialData
       ? {
           ...emptyForm,
@@ -76,11 +93,20 @@ function AppointmentForm({
           reminderEnabled:
             initialData.reminderEnabled !==
             false,
+          reminderMode:
+            initialData.reminderMode ===
+            'exact'
+              ? 'exact'
+              : 'relative',
           reminderMinutesBefore:
             Number(
               initialData.reminderMinutesBefore ??
                 30,
             ),
+          reminderDate:
+            exactParts.date,
+          reminderTime:
+            exactParts.time,
         }
       : {
           ...emptyForm,
@@ -215,20 +241,80 @@ function AppointmentForm({
         formData.reminderMinutesBefore,
       );
 
+    let reminderAt = '';
+
     if (
       formData.reminderEnabled &&
-      (
+      formData.reminderMode ===
+        'relative'
+    ) {
+      if (
         !Number.isInteger(
           reminderMinutes,
         ) ||
         reminderMinutes < 0 ||
         reminderMinutes > 10080
-      )
+      ) {
+        setError(
+          'El aviso personalizado debe estar entre 0 y 10080 minutos.',
+        );
+        return;
+      }
+    }
+
+    if (
+      formData.reminderEnabled &&
+      formData.reminderMode ===
+        'exact'
     ) {
-      setError(
-        'El aviso personalizado debe estar entre 0 y 10080 minutos.',
-      );
-      return;
+      if (
+        !formData.reminderDate ||
+        !formData.reminderTime
+      ) {
+        setError(
+          'Elegí la fecha y la hora exactas del recordatorio.',
+        );
+        return;
+      }
+
+      const exactReminder =
+        new Date(
+          `${formData.reminderDate}T${formData.reminderTime}:00`,
+        );
+
+      if (
+        Number.isNaN(
+          exactReminder.getTime(),
+        )
+      ) {
+        setError(
+          'La fecha u hora del recordatorio no es válida.',
+        );
+        return;
+      }
+
+      if (
+        exactReminder.getTime() >
+        appointmentAt.getTime()
+      ) {
+        setError(
+          'El recordatorio debe ser antes o a la hora del turno.',
+        );
+        return;
+      }
+
+      if (
+        exactReminder.getTime() <
+        Date.now() - 60 * 1000
+      ) {
+        setError(
+          'El recordatorio no puede quedar programado en el pasado.',
+        );
+        return;
+      }
+
+      reminderAt =
+        exactReminder.toISOString();
     }
 
     setError('');
@@ -249,8 +335,14 @@ function AppointmentForm({
         Boolean(
           formData.reminderEnabled,
         ),
+      reminderMode:
+        formData.reminderMode ===
+        'exact'
+          ? 'exact'
+          : 'relative',
       reminderMinutesBefore:
         reminderMinutes,
+      reminderAt,
     });
   }
 
@@ -403,48 +495,101 @@ function AppointmentForm({
         </label>
 
         {formData.reminderEnabled && (
-          <div className="appointment-form__reminder-grid">
-            <label>
-              Avisar
-              <select
-                className="form-select"
-                value={reminderPreset}
-                onChange={
-                  handleReminderPreset
-                }
-              >
-                {REMINDER_OPTIONS.map(
-                  (option) => (
-                    <option
-                      key={option.value}
-                      value={option.value}
-                    >
-                      {option.label}
-                    </option>
-                  ),
-                )}
-              </select>
-            </label>
-
-            {reminderPreset ===
-              'custom' && (
+          <>
+            <div className="appointment-form__reminder-grid">
               <label>
-                Minutos antes
-                <input
-                  type="number"
-                  className="form-control"
-                  name="reminderMinutesBefore"
-                  value={
-                    formData.reminderMinutesBefore
-                  }
+                Cómo quiero que me avise
+                <select
+                  className="form-select"
+                  name="reminderMode"
+                  value={formData.reminderMode}
                   onChange={handleChange}
-                  min="0"
-                  max="10080"
-                  step="1"
-                />
+                >
+                  <option value="relative">
+                    Cierto tiempo antes
+                  </option>
+
+                  <option value="exact">
+                    En una fecha y hora exactas
+                  </option>
+                </select>
               </label>
+            </div>
+
+            {formData.reminderMode ===
+              'relative' ? (
+              <div className="appointment-form__reminder-grid">
+                <label>
+                  Avisar
+                  <select
+                    className="form-select"
+                    value={reminderPreset}
+                    onChange={
+                      handleReminderPreset
+                    }
+                  >
+                    {REMINDER_OPTIONS.map(
+                      (option) => (
+                        <option
+                          key={option.value}
+                          value={option.value}
+                        >
+                          {option.label}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </label>
+
+                {reminderPreset ===
+                  'custom' && (
+                  <label>
+                    Minutos antes
+                    <input
+                      type="number"
+                      className="form-control"
+                      name="reminderMinutesBefore"
+                      value={
+                        formData.reminderMinutesBefore
+                      }
+                      onChange={handleChange}
+                      min="0"
+                      max="10080"
+                      step="1"
+                    />
+                  </label>
+                )}
+              </div>
+            ) : (
+              <div className="appointment-form__reminder-grid">
+                <label>
+                  Fecha del recordatorio
+                  <input
+                    type="date"
+                    className="form-control"
+                    name="reminderDate"
+                    value={
+                      formData.reminderDate
+                    }
+                    onChange={handleChange}
+                  />
+                </label>
+
+                <label>
+                  Hora del recordatorio
+                  <input
+                    type="time"
+                    className="form-control"
+                    name="reminderTime"
+                    value={
+                      formData.reminderTime
+                    }
+                    onChange={handleChange}
+                  />
+                </label>
+              </div>
             )}
-          </div>
+          </>
         )}
       </section>
 
