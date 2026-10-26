@@ -1275,9 +1275,9 @@ function SettingsPage() {
               <i className="bi bi-clipboard2-pulse" />
 
               <span>
-                <strong>Seguimientos médicos</strong>
+                <strong>Turnos y seguimientos médicos</strong>
                 <small>
-                  Avisar por fechas de seguimiento registradas en consultas.
+                  Avisar por turnos programados y fechas de seguimiento registradas.
                 </small>
               </span>
             </label>
