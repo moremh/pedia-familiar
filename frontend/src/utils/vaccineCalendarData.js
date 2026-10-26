@@ -1,3 +1,8 @@
+export const NATIONAL_VACCINE_CALENDAR_VERSION = '2026';
+export const NATIONAL_VACCINE_CALENDAR_REVIEWED_AT = '2026-10-26';
+export const NATIONAL_VACCINE_CALENDAR_SOURCE_URL =
+  'https://www.argentina.gob.ar/salud/vacunas';
+
 export const NATIONAL_VACCINE_CALENDAR = [
   {
     id: 'newborn',
@@ -158,6 +163,11 @@ export const NATIONAL_VACCINE_CALENDAR = [
     ageLabel: '15 a 18 meses',
     items: [
       {
+        key: '15-18m-triple-viral',
+        name: 'Triple Viral SRP',
+        note: 'Segunda dosis para niños nacidos desde el 1 de julio de 2024.',
+      },
+      {
         key: '15-18m-quintuple',
         name: 'Quíntuple',
         note: 'Refuerzo entre los 15 y 18 meses.',
@@ -198,7 +208,8 @@ export const NATIONAL_VACCINE_CALENDAR = [
       {
         key: '5y-triple-viral',
         name: 'Triple Viral',
-        note: 'Dosis correspondiente a los 5 años.',
+        note: 'Segunda dosis de transición para nacidos en 2021, 2022, 2023 y hasta el 30 de junio de 2024.',
+        conditional: true,
       },
       {
         key: '5y-flu-risk',
