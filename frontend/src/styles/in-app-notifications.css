@@ -1,0 +1,94 @@
+.in-app-notifications {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 9999;
+  display: grid;
+  width: min(390px, calc(100vw - 28px));
+  gap: 10px;
+  pointer-events: none;
+}
+
+.in-app-notification {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid rgba(51, 131, 143, 0.24);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 18px 50px rgba(29, 58, 76, 0.22);
+  backdrop-filter: blur(12px);
+  pointer-events: auto;
+  animation: mipeque-notification-in 180ms ease-out;
+}
+
+.in-app-notification__icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: #e2f3f5;
+  color: #2e7f89;
+  place-items: center;
+}
+
+.in-app-notification__content {
+  min-width: 0;
+}
+
+.in-app-notification__content strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #294456;
+  font-size: 0.88rem;
+}
+
+.in-app-notification__content p {
+  margin: 0 0 8px;
+  color: #677d8b;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.in-app-notification__content button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2f7f8b;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.in-app-notification__close {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 9px;
+  background: #f0f4f6;
+  color: #71828e;
+  place-items: center;
+}
+
+@keyframes mipeque-notification-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 600px) {
+  .in-app-notifications {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+  }
+}
