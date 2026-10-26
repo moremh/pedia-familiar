@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useState,
 } from 'react';
@@ -6,6 +7,10 @@ import {
 import {
   isMedicationOnlyAccess,
 } from '../../services/familyAccessService.js';
+
+import {
+  getCommercialContactSettings,
+} from '../../services/commercialSettingsService.js';
 
 import '../../styles/help.css';
 
@@ -195,9 +200,33 @@ function HelpPage() {
   const limitedAccess =
     isMedicationOnlyAccess();
 
-  const adminWhatsApp = String(
-    import.meta.env.VITE_ADMIN_WHATSAPP || '',
-  ).replace(/\D/g, '');
+  const [adminWhatsApp, setAdminWhatsApp] =
+    useState(() =>
+      String(
+        import.meta.env.VITE_ADMIN_WHATSAPP || '',
+      ).replace(/\D/g, ''),
+    );
+
+  useEffect(() => {
+    let active = true;
+
+    getCommercialContactSettings()
+      .then((settings) => {
+        if (
+          active &&
+          settings.supportWhatsapp
+        ) {
+          setAdminWhatsApp(
+            settings.supportWhatsapp,
+          );
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const visibleSections = useMemo(() => {
     const normalizedSearch =
