@@ -36,6 +36,7 @@ import CaregiversPage from '../pages/family/CaregiversPage.jsx';
 import AlertsPage from '../pages/family/AlertsPage.jsx';
 import SettingsPage from '../pages/family/SettingsPage.jsx';
 import MedicationHistoryPage from '../pages/family/MedicationHistoryPage.jsx';
+import HelpPage from '../pages/family/HelpPage.jsx';
 import SubscriptionExpiredPage from '../pages/family/SubscriptionExpiredPage.jsx';
 
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage.jsx';
@@ -111,6 +112,11 @@ function AppRoutes() {
           <Route
             path="history"
             element={<MedicationHistoryPage />}
+          />
+
+          <Route
+            path="help"
+            element={<HelpPage />}
           />
 
           <Route element={<FullFamilyAccessRoute />}>
