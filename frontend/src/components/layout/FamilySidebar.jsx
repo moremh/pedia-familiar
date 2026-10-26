@@ -57,6 +57,11 @@ const fullNavigationSections = [
         icon: 'bi-clipboard2-pulse',
       },
       {
+        label: 'Turnos',
+        path: '/dashboard/appointments',
+        icon: 'bi-calendar-event',
+      },
+      {
         label: 'Vacunas',
         path: '/dashboard/vaccines',
         icon: 'bi-shield-plus',
