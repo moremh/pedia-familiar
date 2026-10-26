@@ -668,6 +668,46 @@ export async function updateRecoveredPassword({
   return true;
 }
 
+export async function deleteCurrentAccount() {
+  const client = requireSupabase();
+
+  const { data, error } =
+    await client.functions.invoke(
+      'delete-account',
+      {
+        body: {
+          confirm: true,
+        },
+      },
+    );
+
+  if (error) {
+    throw new Error(
+      error.message ||
+        'No se pudo eliminar la cuenta.',
+    );
+  }
+
+  if (!data?.ok) {
+    throw new Error(
+      data?.message ||
+        'No se pudo eliminar la cuenta.',
+    );
+  }
+
+  clearCachedAccount();
+
+  try {
+    await client.auth.signOut({
+      scope: 'local',
+    });
+  } catch {
+    // La cuenta ya puede haber sido eliminada.
+  }
+
+  return true;
+}
+
 export async function logoutUser() {
   if (isSupabaseConfigured) {
     try {
