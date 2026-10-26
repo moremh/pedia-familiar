@@ -244,6 +244,22 @@ function SettingsPage() {
     }
 
     if (
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(
+        String(
+          settings.dailyAlertTime ||
+            '',
+        ),
+      )
+    ) {
+      showMessage(
+        'error',
+        'Elegí una hora válida para los avisos diarios.',
+      );
+
+      return;
+    }
+
+    if (
       settings.expirationWarningDays < 1 ||
       settings.expirationWarningDays > 365
     ) {
@@ -872,6 +888,29 @@ function SettingsPage() {
 
                 <span>minutos</span>
               </div>
+            </div>
+
+            <div className="family-settings-field">
+              <label htmlFor="dailyAlertTime">
+                Hora de avisos por fecha
+              </label>
+
+              <input
+                type="time"
+                id="dailyAlertTime"
+                name="dailyAlertTime"
+                className="form-control"
+                value={
+                  settings.dailyAlertTime
+                }
+                onChange={handleChange}
+              />
+
+              <small>
+                Se usa para vacunas, vencimientos y
+                seguimientos que tienen fecha pero no
+                un horario propio.
+              </small>
             </div>
 
             <div className="family-settings-field">

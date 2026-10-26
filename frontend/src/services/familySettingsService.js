@@ -49,6 +49,7 @@ export const DEFAULT_FAMILY_SETTINGS = {
   phone: '',
   defaultCaregiverId: '',
   reminderAdvanceMinutes: 15,
+  dailyAlertTime: '09:00',
   expirationWarningDays: 30,
   vaccineWarningDays: 30,
   showOverdueAlerts: true,

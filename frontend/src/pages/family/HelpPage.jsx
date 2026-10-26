@@ -163,6 +163,7 @@ const MANUAL_SECTIONS = [
       'Entrá en Configuración y buscá Notificaciones push.',
       'Tocá Activar en este dispositivo y aceptá el permiso del navegador.',
       'Elegí qué tipos de avisos querés recibir.',
+      'En Configuración elegí también la hora diaria para vacunas, vencimientos y seguimientos que no tienen un horario propio.',
       'Usá Enviar prueba para verificar que el dispositivo esté correctamente registrado.',
       'En iPhone o iPad, primero instalá MiPeque en la pantalla de inicio y abrila desde su ícono.',
     ],
