@@ -48,6 +48,7 @@ type PushSubscriptionRow = {
 type FamilySettingsRow = {
   family_id: string
   reminder_advance_minutes: number
+  daily_alert_time: string
   expiration_warning_days: number
   vaccine_warning_days: number
   show_overdue_alerts: boolean
@@ -646,6 +647,7 @@ function createDateNotificationCandidates({
   privateBody,
   detailedTitle,
   detailedBody,
+  alertTime,
 }: {
   familyId: string
   referenceId: string
@@ -659,6 +661,7 @@ function createDateNotificationCandidates({
   privateBody: string
   detailedTitle: string
   detailedBody: string
+  alertTime: string
 }) {
   const candidates: Candidate[] = []
 
@@ -675,7 +678,7 @@ function createDateNotificationCandidates({
 
     const warningAt = zonedDateTimeToUtc(
       warningDateKey,
-      '09:00',
+      alertTime,
       timezone,
     )
 
@@ -701,7 +704,7 @@ function createDateNotificationCandidates({
 
   const dueAt = zonedDateTimeToUtc(
     dateKey,
-    '09:00',
+    alertTime,
     timezone,
   )
 
@@ -1115,7 +1118,7 @@ async function dispatchNotifications(request: Request) {
     admin
       .from('family_settings')
       .select(
-        'family_id, reminder_advance_minutes, expiration_warning_days, vaccine_warning_days, show_overdue_alerts, show_stock_alerts, show_expiration_alerts, show_vaccine_alerts',
+        'family_id, reminder_advance_minutes, daily_alert_time, expiration_warning_days, vaccine_warning_days, show_overdue_alerts, show_stock_alerts, show_expiration_alerts, show_vaccine_alerts',
       )
       .in('family_id', familyIds),
 
@@ -1371,6 +1374,10 @@ async function dispatchNotifications(request: Request) {
         detailedTitle: vaccine.vaccine_name,
         detailedBody:
           `${childName}${vaccine.dose_label ? ` · ${vaccine.dose_label}` : ''} · ${vaccine.next_dose_date}`,
+        alertTime:
+          normalizeTime(
+            settings.daily_alert_time,
+          ) || '09:00',
       }),
     )
   }
@@ -1457,6 +1464,10 @@ async function dispatchNotifications(request: Request) {
           detailedTitle: item.medicine_name,
           detailedBody:
             `${childName} · vence el ${item.expiration_date}`,
+          alertTime:
+            normalizeTime(
+              settings.daily_alert_time,
+            ) || '09:00',
         }),
       )
     }
@@ -1476,6 +1487,16 @@ async function dispatchNotifications(request: Request) {
       childrenById.get(consultation.child_id)?.full_name ||
       'uno de tus hijos'
 
+    const settings =
+      settingsByFamily.get(
+        consultation.family_id,
+      )
+
+    const dailyAlertTime =
+      normalizeTime(
+        settings?.daily_alert_time,
+      ) || '09:00'
+
     const dayBefore = addDaysToDateKey(
       consultation.follow_up_date,
       -1,
@@ -1483,7 +1504,7 @@ async function dispatchNotifications(request: Request) {
 
     const warningAt = zonedDateTimeToUtc(
       dayBefore,
-      '09:00',
+      dailyAlertTime,
       timezone,
     )
 
@@ -1510,7 +1531,7 @@ async function dispatchNotifications(request: Request) {
 
     const dueAt = zonedDateTimeToUtc(
       consultation.follow_up_date,
-      '09:00',
+      dailyAlertTime,
       timezone,
     )
 
