@@ -13,6 +13,13 @@ const VAPID_PUBLIC_KEY = String(
   import.meta.env.VITE_VAPID_PUBLIC_KEY || '',
 ).trim();
 
+const READY_TIMEOUT_MS = 10000;
+
+const wait = (milliseconds) =>
+  new Promise((resolve) =>
+    window.setTimeout(resolve, milliseconds),
+  );
+
 export const DEFAULT_PUSH_PREFERENCES = {
   notifyMedicationDue: true,
   notifyMedicationOverdue: true,
@@ -30,9 +37,7 @@ function readStoredPreferences() {
     );
 
     if (!rawValue) {
-      return {
-        ...DEFAULT_PUSH_PREFERENCES,
-      };
+      return { ...DEFAULT_PUSH_PREFERENCES };
     }
 
     const parsedValue = JSON.parse(rawValue);
@@ -42,9 +47,7 @@ function readStoredPreferences() {
       typeof parsedValue !== 'object' ||
       Array.isArray(parsedValue)
     ) {
-      return {
-        ...DEFAULT_PUSH_PREFERENCES,
-      };
+      return { ...DEFAULT_PUSH_PREFERENCES };
     }
 
     return {
@@ -52,9 +55,7 @@ function readStoredPreferences() {
       ...parsedValue,
     };
   } catch {
-    return {
-      ...DEFAULT_PUSH_PREFERENCES,
-    };
+    return { ...DEFAULT_PUSH_PREFERENCES };
   }
 }
 
@@ -116,39 +117,6 @@ function isStandaloneApp() {
   );
 }
 
-function applicationServerKeysMatch(
-  subscription,
-  expectedKey,
-) {
-  const currentKey =
-    subscription?.options
-      ?.applicationServerKey;
-
-  if (!currentKey) {
-    return false;
-  }
-
-  const expected =
-    urlBase64ToUint8Array(
-      expectedKey,
-    );
-
-  const current =
-    new Uint8Array(currentKey);
-
-  if (
-    current.length !==
-    expected.length
-  ) {
-    return false;
-  }
-
-  return current.every(
-    (value, index) =>
-      value === expected[index],
-  );
-}
-
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat(
     (4 - (base64String.length % 4)) % 4,
@@ -160,13 +128,205 @@ function urlBase64ToUint8Array(base64String) {
     .replace(/-/g, '+')
     .replace(/_/g, '/');
 
-  const rawData = window.atob(base64);
+  const rawData =
+    window.atob(base64);
 
-  return Uint8Array.from(
-    [...rawData].map((character) =>
-      character.charCodeAt(0),
+  const outputArray =
+    new Uint8Array(rawData.length);
+
+  for (
+    let index = 0;
+    index < rawData.length;
+    index += 1
+  ) {
+    outputArray[index] =
+      rawData.charCodeAt(index);
+  }
+
+  return outputArray;
+}
+
+function uint8ArrayToBase64Url(value) {
+  const bytes =
+    value instanceof Uint8Array
+      ? value
+      : new Uint8Array(value);
+
+  let binary = '';
+
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+
+  return window
+    .btoa(binary)
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+function getSubscriptionKey(subscription) {
+  try {
+    const applicationServerKey =
+      subscription?.options
+        ?.applicationServerKey;
+
+    if (!applicationServerKey) {
+      return null;
+    }
+
+    return uint8ArrayToBase64Url(
+      applicationServerKey,
+    );
+  } catch {
+    return null;
+  }
+}
+
+async function getServiceWorkerRegistration({
+  registerIfMissing = false,
+} = {}) {
+  if (
+    typeof window === 'undefined' ||
+    !('serviceWorker' in navigator)
+  ) {
+    return {
+      success: false,
+      registration: null,
+      message:
+        'Este navegador no admite Service Workers.',
+    };
+  }
+
+  let registration =
+    await navigator.serviceWorker
+      .getRegistration();
+
+  if (
+    !registration &&
+    registerIfMissing
+  ) {
+    try {
+      registration =
+        await navigator.serviceWorker
+          .register('/sw.js');
+    } catch (error) {
+      return {
+        success: false,
+        registration: null,
+        message:
+          error?.message ||
+          'No se pudo registrar el Service Worker de MiPeque.',
+        error,
+      };
+    }
+  }
+
+  if (registration) {
+    try {
+      await registration.update();
+    } catch {
+      // La suscripción puede continuar usando el SW actual.
+    }
+
+    return {
+      success: true,
+      registration,
+    };
+  }
+
+  return Promise.race([
+    navigator.serviceWorker.ready.then(
+      (readyRegistration) => ({
+        success: true,
+        registration:
+          readyRegistration,
+      }),
     ),
+    wait(READY_TIMEOUT_MS).then(
+      () => ({
+        success: false,
+        registration: null,
+        message:
+          'El Service Worker todavía no está disponible. Cerrá y volvé a abrir MiPeque e intentá nuevamente.',
+      }),
+    ),
+  ]);
+}
+
+export function getPushCapability() {
+  const secureContext =
+    typeof window !== 'undefined' &&
+    window.isSecureContext;
+
+  const apiSupported = Boolean(
+    typeof window !== 'undefined' &&
+      'Notification' in window &&
+      'serviceWorker' in navigator &&
+      'PushManager' in window,
   );
+
+  const iosNeedsInstall =
+    isIosDevice() &&
+    !isStandaloneApp();
+
+  return {
+    supported:
+      secureContext &&
+      apiSupported &&
+      Boolean(VAPID_PUBLIC_KEY) &&
+      !iosNeedsInstall,
+    secureContext,
+    apiSupported,
+    vapidConfigured:
+      Boolean(VAPID_PUBLIC_KEY),
+    iosNeedsInstall,
+    permission:
+      typeof Notification !== 'undefined'
+        ? Notification.permission
+        : 'unsupported',
+  };
+}
+
+export async function getCurrentPushSubscription() {
+  const capability =
+    getPushCapability();
+
+  if (!capability.apiSupported) {
+    return {
+      success: false,
+      subscription: null,
+      status: 'unsupported',
+      message:
+        'Este navegador no admite notificaciones Push.',
+    };
+  }
+
+  const registrationResult =
+    await getServiceWorkerRegistration();
+
+  if (!registrationResult.success) {
+    return {
+      ...registrationResult,
+      subscription: null,
+      status:
+        'service-worker-unavailable',
+    };
+  }
+
+  const subscription =
+    await registrationResult
+      .registration
+      .pushManager
+      .getSubscription();
+
+  return {
+    success: true,
+    subscription:
+      subscription || null,
+    registration:
+      registrationResult.registration,
+  };
 }
 
 function mapDatabasePreferences(row) {
@@ -187,7 +347,8 @@ function mapDatabasePreferences(row) {
       row.notify_stock ?? true,
     notifyFollowups:
       row.notify_followups ?? true,
-    showDetails: row.show_details ?? false,
+    showDetails:
+      row.show_details ?? false,
   };
 }
 
@@ -215,46 +376,6 @@ function preferencesToRpc(preferences) {
   };
 }
 
-async function getServiceWorkerRegistration({
-  registerIfMissing = false,
-} = {}) {
-  if (!('serviceWorker' in navigator)) {
-    return null;
-  }
-
-  let registration =
-    await navigator.serviceWorker.getRegistration(
-      '/',
-    );
-
-  if (
-    !registration &&
-    registerIfMissing
-  ) {
-    registration =
-      await navigator.serviceWorker.register(
-        '/sw.js',
-      );
-  }
-
-  if (!registration) {
-    return null;
-  }
-
-  return navigator.serviceWorker.ready;
-}
-
-async function getBrowserSubscription() {
-  const registration =
-    await getServiceWorkerRegistration();
-
-  if (!registration) {
-    return null;
-  }
-
-  return registration.pushManager.getSubscription();
-}
-
 async function findRemoteSubscription(
   endpoint,
 ) {
@@ -267,26 +388,27 @@ async function findRemoteSubscription(
 
   const client = requireSupabase();
 
-  const { data, error } = await client
-    .from('push_subscriptions')
-    .select(
-      [
-        'id',
-        'family_id',
-        'user_id',
-        'endpoint',
-        'notify_medication_due',
-        'notify_medication_overdue',
-        'notify_vaccines',
-        'notify_expirations',
-        'notify_stock',
-        'notify_followups',
-        'show_details',
-        'is_enabled',
-      ].join(', '),
-    )
-    .eq('endpoint', endpoint)
-    .maybeSingle();
+  const { data, error } =
+    await client
+      .from('push_subscriptions')
+      .select(
+        [
+          'id',
+          'family_id',
+          'user_id',
+          'endpoint',
+          'notify_medication_due',
+          'notify_medication_overdue',
+          'notify_vaccines',
+          'notify_expirations',
+          'notify_stock',
+          'notify_followups',
+          'show_details',
+          'is_enabled',
+        ].join(', '),
+      )
+      .eq('endpoint', endpoint)
+      .maybeSingle();
 
   if (error) {
     console.error(
@@ -304,7 +426,8 @@ async function registerRemoteSubscription(
   subscription,
   preferences,
 ) {
-  const familyId = getCurrentFamilyId();
+  const familyId =
+    getCurrentFamilyId();
 
   if (!familyId) {
     throw new Error(
@@ -312,109 +435,439 @@ async function registerRemoteSubscription(
     );
   }
 
-  const subscriptionJson =
+  const serialized =
     subscription.toJSON();
 
+  const endpoint =
+    serialized.endpoint ||
+    subscription.endpoint ||
+    '';
+
   const p256dhKey =
-    subscriptionJson.keys?.p256dh || '';
+    serialized.keys?.p256dh || '';
 
   const authKey =
-    subscriptionJson.keys?.auth || '';
+    serialized.keys?.auth || '';
 
-  if (!p256dhKey || !authKey) {
+  if (
+    !endpoint ||
+    !p256dhKey ||
+    !authKey
+  ) {
     throw new Error(
-      'El navegador no devolvió las claves necesarias para las notificaciones.',
+      'El navegador no devolvió una suscripción Push completa.',
     );
   }
 
-  const client = requireSupabase();
+  const client =
+    requireSupabase();
 
   const normalizedPreferences =
     saveStoredPreferences(preferences);
 
-  const { data, error } = await client.rpc(
-    'register_push_subscription',
-    {
-      p_family_id: familyId,
-      p_endpoint: subscription.endpoint,
-      p_p256dh_key: p256dhKey,
-      p_auth_key: authKey,
-      p_user_agent:
-        navigator.userAgent || '',
-      p_timezone: getTimezone(),
-      ...preferencesToRpc(
-        normalizedPreferences,
-      ),
-    },
-  );
+  const { data, error } =
+    await client.rpc(
+      'register_push_subscription',
+      {
+        p_family_id: familyId,
+        p_endpoint: endpoint,
+        p_p256dh_key: p256dhKey,
+        p_auth_key: authKey,
+        p_user_agent:
+          navigator.userAgent || '',
+        p_timezone:
+          getTimezone(),
+        ...preferencesToRpc(
+          normalizedPreferences,
+        ),
+      },
+    );
 
   if (error) {
+    console.error(
+      'No se pudo guardar la suscripción Push:',
+      error,
+    );
+
     throw new Error(
       error.message ||
-        'No se pudo guardar el dispositivo para recibir notificaciones.',
+        'No se pudo guardar este dispositivo para recibir notificaciones.',
     );
   }
 
   return {
     id: data,
-    preferences: normalizedPreferences,
+    preferences:
+      normalizedPreferences,
   };
 }
 
-export function getPushCapability() {
-  const secureContext =
-    typeof window !== 'undefined' &&
-    window.isSecureContext;
+async function removeRemoteSubscription(
+  endpoint,
+) {
+  if (
+    !endpoint ||
+    !isSupabaseConfigured
+  ) {
+    return true;
+  }
 
-  const apiSupported = Boolean(
-    typeof window !== 'undefined' &&
-      'Notification' in window &&
-      'serviceWorker' in navigator &&
-      'PushManager' in window,
-  );
+  try {
+    const client =
+      requireSupabase();
 
-  const iosNeedsInstall =
-    isIosDevice() && !isStandaloneApp();
+    const { error } =
+      await client.rpc(
+        'detach_push_subscription',
+        {
+          p_endpoint: endpoint,
+        },
+      );
 
-  return {
-    supported:
-      secureContext &&
-      apiSupported &&
-      Boolean(VAPID_PUBLIC_KEY) &&
-      !iosNeedsInstall,
-    secureContext,
-    apiSupported,
-    vapidConfigured:
-      Boolean(VAPID_PUBLIC_KEY),
-    iosNeedsInstall,
-    permission:
-      typeof Notification !== 'undefined'
-        ? Notification.permission
-        : 'unsupported',
-  };
+    if (error) {
+      console.error(
+        'No se pudo quitar la suscripción Push de Supabase:',
+        error,
+      );
+
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error(
+      'No se pudo quitar la suscripción Push de Supabase:',
+      error,
+    );
+
+    return false;
+  }
+}
+
+export async function subscribeCurrentDeviceToPush(
+  preferences =
+    DEFAULT_PUSH_PREFERENCES,
+) {
+  const capability =
+    getPushCapability();
+
+  if (capability.iosNeedsInstall) {
+    return {
+      success: false,
+      status: 'ios-install-required',
+      message:
+        'En iPhone o iPad, agregá MiPeque a la pantalla de inicio y abrila desde su ícono antes de activar las notificaciones.',
+    };
+  }
+
+  if (!capability.secureContext) {
+    return {
+      success: false,
+      status: 'insecure',
+      message:
+        'Las notificaciones Push requieren HTTPS.',
+    };
+  }
+
+  if (!capability.apiSupported) {
+    return {
+      success: false,
+      status: 'unsupported',
+      message:
+        'Este navegador no admite notificaciones Push.',
+    };
+  }
+
+  if (!capability.vapidConfigured) {
+    return {
+      success: false,
+      status: 'missing-key',
+      message:
+        'Falta configurar VITE_VAPID_PUBLIC_KEY.',
+    };
+  }
+
+  if (
+    Notification.permission !==
+    'granted'
+  ) {
+    return {
+      success: false,
+      status:
+        'permission-required',
+      message:
+        'Primero tenés que permitir las notificaciones.',
+    };
+  }
+
+  const registrationResult =
+    await getServiceWorkerRegistration({
+      registerIfMissing: true,
+    });
+
+  if (!registrationResult.success) {
+    return {
+      ...registrationResult,
+      success: false,
+      status:
+        'service-worker-unavailable',
+    };
+  }
+
+  const registration =
+    registrationResult.registration;
+
+  let subscription =
+    await registration
+      .pushManager
+      .getSubscription();
+
+  if (subscription) {
+    const currentKey =
+      getSubscriptionKey(
+        subscription,
+      );
+
+    if (
+      currentKey &&
+      currentKey !==
+        VAPID_PUBLIC_KEY
+    ) {
+      const oldEndpoint =
+        subscription.endpoint;
+
+      await removeRemoteSubscription(
+        oldEndpoint,
+      );
+
+      try {
+        await subscription
+          .unsubscribe();
+      } catch (error) {
+        console.warn(
+          'No se pudo eliminar la suscripción Push anterior:',
+          error,
+        );
+      }
+
+      subscription = null;
+    }
+  }
+
+  if (!subscription) {
+    try {
+      subscription =
+        await registration
+          .pushManager
+          .subscribe({
+            userVisibleOnly: true,
+            applicationServerKey:
+              urlBase64ToUint8Array(
+                VAPID_PUBLIC_KEY,
+              ),
+          });
+    } catch (error) {
+      console.error(
+        'No se pudo crear la suscripción Push:',
+        error,
+      );
+
+      return {
+        success: false,
+        status:
+          'subscription-error',
+        message:
+          error?.message
+            ? `No se pudo registrar este navegador: ${error.message}`
+            : 'No se pudo registrar este navegador para notificaciones Push.',
+        error,
+      };
+    }
+  }
+
+  try {
+    const remote =
+      await registerRemoteSubscription(
+        subscription,
+        preferences,
+      );
+
+    return {
+      success: true,
+      status: 'subscribed',
+      subscription,
+      subscriptionId:
+        remote.id,
+      preferences:
+        remote.preferences,
+      message:
+        'Este dispositivo quedó registrado para recibir notificaciones Push.',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      status: 'save-error',
+      subscription,
+      message:
+        error.message ||
+        'El navegador quedó suscripto, pero no se pudo guardar el dispositivo en MiPeque.',
+      error,
+    };
+  }
+}
+
+export async function requestPushNotificationPermission(
+  preferences =
+    DEFAULT_PUSH_PREFERENCES,
+) {
+  const capability =
+    getPushCapability();
+
+  if (!capability.apiSupported) {
+    return {
+      success: false,
+      permission:
+        'unsupported',
+      status:
+        'unsupported',
+      message:
+        'Este navegador no admite notificaciones del sistema.',
+    };
+  }
+
+  try {
+    const permission =
+      await Notification
+        .requestPermission();
+
+    if (
+      permission !==
+      'granted'
+    ) {
+      return {
+        success: false,
+        permission,
+        status:
+          permission === 'denied'
+            ? 'permission-denied'
+            : 'permission-required',
+        message:
+          permission === 'denied'
+            ? 'Las notificaciones están bloqueadas en este dispositivo.'
+            : 'No se concedió permiso para mostrar notificaciones.',
+      };
+    }
+
+    const result =
+      await subscribeCurrentDeviceToPush(
+        preferences,
+      );
+
+    return {
+      ...result,
+      permission,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      permission:
+        Notification.permission,
+      status: 'error',
+      message:
+        error?.message ||
+        'No se pudieron activar las notificaciones.',
+      error,
+    };
+  }
 }
 
 export async function getPushNotificationState() {
-  const capability = getPushCapability();
+  const capability =
+    getPushCapability();
 
   if (!capability.supported) {
     return {
       ...capability,
+      status:
+        !capability.apiSupported
+          ? 'unsupported'
+          : !capability.vapidConfigured
+            ? 'missing-key'
+            : capability.iosNeedsInstall
+              ? 'ios-install-required'
+              : 'unavailable',
       subscribed: false,
+      browserSubscribed: false,
+      remoteRegistered: false,
       subscriptionId: null,
       preferences:
         readStoredPreferences(),
     };
   }
 
-  const browserSubscription =
-    await getBrowserSubscription();
-
-  if (!browserSubscription) {
+  if (
+    capability.permission ===
+    'denied'
+  ) {
     return {
       ...capability,
-      permission: Notification.permission,
+      status:
+        'permission-denied',
       subscribed: false,
+      browserSubscribed: false,
+      remoteRegistered: false,
+      subscriptionId: null,
+      preferences:
+        readStoredPreferences(),
+    };
+  }
+
+  if (
+    capability.permission !==
+    'granted'
+  ) {
+    return {
+      ...capability,
+      status:
+        'permission-required',
+      subscribed: false,
+      browserSubscribed: false,
+      remoteRegistered: false,
+      subscriptionId: null,
+      preferences:
+        readStoredPreferences(),
+    };
+  }
+
+  const current =
+    await getCurrentPushSubscription();
+
+  if (!current.success) {
+    return {
+      ...capability,
+      status:
+        current.status || 'error',
+      subscribed: false,
+      browserSubscribed: false,
+      remoteRegistered: false,
+      subscriptionId: null,
+      preferences:
+        readStoredPreferences(),
+      remoteRegistrationError:
+        current.message || '',
+    };
+  }
+
+  if (!current.subscription) {
+    return {
+      ...capability,
+      permission:
+        Notification.permission,
+      status:
+        'not-subscribed',
+      subscribed: false,
+      browserSubscribed: false,
+      remoteRegistered: false,
       subscriptionId: null,
       preferences:
         readStoredPreferences(),
@@ -423,34 +876,26 @@ export async function getPushNotificationState() {
 
   let remoteSubscription =
     await findRemoteSubscription(
-      browserSubscription.endpoint,
+      current.subscription.endpoint,
     );
 
   let remoteRegistrationError = '';
 
-  if (
-    !remoteSubscription &&
-    Notification.permission === 'granted'
-  ) {
+  if (!remoteSubscription) {
     try {
       await registerRemoteSubscription(
-        browserSubscription,
+        current.subscription,
         readStoredPreferences(),
       );
 
       remoteSubscription =
         await findRemoteSubscription(
-          browserSubscription.endpoint,
+          current.subscription.endpoint,
         );
     } catch (error) {
       remoteRegistrationError =
         error?.message ||
         'No se pudo registrar el dispositivo en MiPeque.';
-
-      console.error(
-        'El navegador está suscripto, pero no se pudo reparar el registro remoto.',
-        error,
-      );
     }
   }
 
@@ -461,13 +906,23 @@ export async function getPushNotificationState() {
 
   saveStoredPreferences(preferences);
 
+  const remoteRegistered =
+    Boolean(
+      remoteSubscription?.is_enabled,
+    );
+
   return {
     ...capability,
-    permission: Notification.permission,
-    subscribed: Boolean(
-      remoteSubscription?.is_enabled,
-    ),
+    permission:
+      Notification.permission,
+    status:
+      remoteRegistered
+        ? 'subscribed'
+        : 'save-error',
+    subscribed:
+      remoteRegistered,
     browserSubscribed: true,
+    remoteRegistered,
     remoteRegistrationError,
     subscriptionId:
       remoteSubscription?.id || null,
@@ -476,111 +931,27 @@ export async function getPushNotificationState() {
 }
 
 export async function enablePushNotifications(
-  preferences = DEFAULT_PUSH_PREFERENCES,
+  preferences =
+    DEFAULT_PUSH_PREFERENCES,
 ) {
-  const capability = getPushCapability();
+  const result =
+    Notification.permission ===
+      'granted'
+      ? await subscribeCurrentDeviceToPush(
+          preferences,
+        )
+      : await requestPushNotificationPermission(
+          preferences,
+        );
 
-  if (capability.iosNeedsInstall) {
+  if (!result.success) {
     throw new Error(
-      'En iPhone o iPad, agregá MiPeque a la pantalla de inicio y abrila desde su ícono antes de activar las notificaciones.',
+      result.message ||
+        'No se pudieron activar las notificaciones.',
     );
   }
 
-  if (!capability.secureContext) {
-    throw new Error(
-      'Las notificaciones push requieren HTTPS.',
-    );
-  }
-
-  if (!capability.apiSupported) {
-    throw new Error(
-      'Este navegador no admite notificaciones push.',
-    );
-  }
-
-  if (!capability.vapidConfigured) {
-    throw new Error(
-      'Falta configurar VITE_VAPID_PUBLIC_KEY.',
-    );
-  }
-
-  const permission =
-    Notification.permission === 'granted'
-      ? 'granted'
-      : await Notification.requestPermission();
-
-  if (permission !== 'granted') {
-    throw new Error(
-      permission === 'denied'
-        ? 'Las notificaciones están bloqueadas en este dispositivo. Habilitalas desde la configuración del navegador o del sistema.'
-        : 'No se concedió permiso para mostrar notificaciones.',
-    );
-  }
-
-  const registration =
-    await getServiceWorkerRegistration({
-      registerIfMissing: true,
-    });
-
-  if (!registration) {
-    throw new Error(
-      'No se pudo preparar el service worker de MiPeque.',
-    );
-  }
-
-  let subscription =
-    await registration.pushManager.getSubscription();
-
-  if (
-    subscription &&
-    !applicationServerKeysMatch(
-      subscription,
-      VAPID_PUBLIC_KEY,
-    )
-  ) {
-    try {
-      await subscription.unsubscribe();
-    } catch (error) {
-      console.error(
-        'No se pudo reemplazar una suscripción push anterior.',
-        error,
-      );
-    }
-
-    subscription = null;
-  }
-
-  if (!subscription) {
-    try {
-      subscription =
-        await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey:
-            urlBase64ToUint8Array(
-              VAPID_PUBLIC_KEY,
-            ),
-        });
-    } catch (error) {
-      throw new Error(
-        error?.message
-          ? `No se pudo crear la suscripción push: ${error.message}`
-          : 'No se pudo crear la suscripción push en este navegador.',
-      );
-    }
-  }
-
-  const remote =
-    await registerRemoteSubscription(
-      subscription,
-      preferences,
-    );
-
-  return {
-    subscribed: true,
-    subscriptionId: remote.id,
-    permission: Notification.permission,
-    preferences: remote.preferences,
-  };
+  return result;
 }
 
 export async function savePushNotificationPreferences(
@@ -589,15 +960,18 @@ export async function savePushNotificationPreferences(
   const normalizedPreferences =
     saveStoredPreferences(preferences);
 
-  const subscription =
-    await getBrowserSubscription();
+  const current =
+    await getCurrentPushSubscription();
 
-  if (!subscription) {
+  if (
+    !current.success ||
+    !current.subscription
+  ) {
     return normalizedPreferences;
   }
 
   await registerRemoteSubscription(
-    subscription,
+    current.subscription,
     normalizedPreferences,
   );
 
@@ -605,37 +979,26 @@ export async function savePushNotificationPreferences(
 }
 
 export async function disablePushNotifications() {
-  const subscription =
-    await getBrowserSubscription();
+  const current =
+    await getCurrentPushSubscription();
 
-  if (!subscription) {
+  if (
+    !current.success ||
+    !current.subscription
+  ) {
     return true;
   }
 
-  if (isSupabaseConfigured) {
-    try {
-      const client = requireSupabase();
-
-      await client.rpc(
-        'detach_push_subscription',
-        {
-          p_endpoint:
-            subscription.endpoint,
-        },
-      );
-    } catch (error) {
-      console.error(
-        'No se pudo quitar la suscripción remota.',
-        error,
-      );
-    }
-  }
+  await removeRemoteSubscription(
+    current.subscription.endpoint,
+  );
 
   try {
-    await subscription.unsubscribe();
+    await current.subscription
+      .unsubscribe();
   } catch (error) {
-    console.error(
-      'No se pudo cancelar la suscripción del navegador.',
+    console.warn(
+      'La suscripción se quitó de MiPeque, pero el navegador no pudo eliminarla localmente:',
       error,
     );
   }
@@ -644,63 +1007,122 @@ export async function disablePushNotifications() {
 }
 
 export async function detachCurrentPushSubscription() {
-  if (!isSupabaseConfigured) {
+  const current =
+    await getCurrentPushSubscription();
+
+  if (
+    !current.success ||
+    !current.subscription
+  ) {
     return;
   }
 
-  try {
-    const subscription =
-      await getBrowserSubscription();
-
-    if (!subscription) {
-      return;
-    }
-
-    const client = requireSupabase();
-
-    await client.rpc(
-      'detach_push_subscription',
-      {
-        p_endpoint:
-          subscription.endpoint,
-      },
-    );
-  } catch (error) {
-    console.error(
-      'No se pudo desvincular el dispositivo de las notificaciones push.',
-      error,
-    );
-  }
+  await removeRemoteSubscription(
+    current.subscription.endpoint,
+  );
 }
 
 export async function refreshCurrentPushSubscription() {
   if (
     !isSupabaseConfigured ||
     typeof Notification === 'undefined' ||
-    Notification.permission !== 'granted'
+    Notification.permission !==
+      'granted'
   ) {
     return null;
   }
 
-  const subscription =
-    await getBrowserSubscription();
+  const current =
+    await getCurrentPushSubscription();
 
-  if (!subscription) {
+  if (
+    !current.success ||
+    !current.subscription
+  ) {
     return null;
   }
 
   try {
     return await registerRemoteSubscription(
-      subscription,
+      current.subscription,
       readStoredPreferences(),
     );
   } catch (error) {
     console.error(
-      'No se pudo actualizar la suscripción push del dispositivo.',
+      'No se pudo actualizar la suscripción Push del dispositivo.',
       error,
     );
 
     return null;
+  }
+}
+
+export async function showTestSystemNotification() {
+  if (
+    typeof Notification ===
+      'undefined' ||
+    Notification.permission !==
+      'granted'
+  ) {
+    return {
+      success: false,
+      message:
+        'Primero tenés que permitir las notificaciones.',
+    };
+  }
+
+  const registrationResult =
+    await getServiceWorkerRegistration({
+      registerIfMissing: true,
+    });
+
+  if (!registrationResult.success) {
+    return registrationResult;
+  }
+
+  try {
+    await registrationResult
+      .registration
+      .showNotification(
+        'Prueba de MiPeque',
+        {
+          body:
+            'Las notificaciones del sistema están funcionando en este dispositivo.',
+          icon:
+            '/icons/icon-192.png',
+          badge:
+            '/icons/icon-192.png',
+          tag:
+            'mipeque-notification-test',
+          renotify: true,
+          requireInteraction: true,
+          silent: false,
+          vibrate: [
+            220,
+            100,
+            220,
+            100,
+            320,
+          ],
+          data: {
+            url:
+              '/dashboard/settings',
+          },
+        },
+      );
+
+    return {
+      success: true,
+      message:
+        'Notificación de prueba enviada al sistema.',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        'No se pudo mostrar la notificación del sistema.',
+      error,
+    };
   }
 }
 
@@ -708,30 +1130,18 @@ export async function sendTestPushNotification() {
   const state =
     await getPushNotificationState();
 
-  if (!state.subscribed) {
+  if (
+    !state.subscribed ||
+    !state.remoteRegistered
+  ) {
     throw new Error(
-      'Primero activá las notificaciones en este dispositivo.',
+      state.remoteRegistrationError ||
+        'Primero registrá este dispositivo para recibir notificaciones.',
     );
   }
 
-  let subscriptionId =
-    state.subscriptionId;
-
-  if (!subscriptionId) {
-    const refreshed =
-      await refreshCurrentPushSubscription();
-
-    subscriptionId =
-      refreshed?.id || null;
-  }
-
-  if (!subscriptionId) {
-    throw new Error(
-      'No se encontró el dispositivo registrado.',
-    );
-  }
-
-  const client = requireSupabase();
+  const client =
+    requireSupabase();
 
   const { data, error } =
     await client.functions.invoke(
@@ -739,7 +1149,8 @@ export async function sendTestPushNotification() {
       {
         body: {
           mode: 'test',
-          subscriptionId,
+          subscriptionId:
+            state.subscriptionId,
         },
       },
     );
