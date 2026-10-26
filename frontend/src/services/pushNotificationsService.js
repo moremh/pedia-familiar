@@ -1111,10 +1111,29 @@ export async function showTestSystemNotification() {
         },
       );
 
+    window.dispatchEvent(
+      new CustomEvent(
+        'mipeque-in-app-notification',
+        {
+          detail: {
+            id:
+              'mipeque-local-test',
+            title:
+              'Prueba de MiPeque',
+            body:
+              'Así se verá un aviso mientras estés usando MiPeque.',
+            url:
+              '/dashboard/settings',
+            category: 'test',
+          },
+        },
+      ),
+    );
+
     return {
       success: true,
       message:
-        'Notificación de prueba enviada al sistema.',
+        'Notificación de prueba enviada al sistema y a MiPeque.',
     };
   } catch (error) {
     return {
