@@ -574,6 +574,100 @@ export async function registerFamilyAccount({
   };
 }
 
+export async function requestPasswordReset(
+  email,
+) {
+  const normalizedEmail =
+    normalizeEmail(email);
+
+  if (!validateEmail(normalizedEmail)) {
+    throw new Error(
+      'Ingresá un correo electrónico válido.',
+    );
+  }
+
+  const client = requireSupabase();
+
+  const redirectTo =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/reset-password`
+      : undefined;
+
+  const { error } =
+    await client.auth.resetPasswordForEmail(
+      normalizedEmail,
+      {
+        redirectTo,
+      },
+    );
+
+  if (error) {
+    throw new Error(
+      translateAuthError(error),
+    );
+  }
+
+  return true;
+}
+
+export async function updateRecoveredPassword({
+  password,
+  confirmPassword,
+}) {
+  const normalizedPassword =
+    String(password || '');
+
+  if (normalizedPassword.length < 8) {
+    throw new Error(
+      'La contraseña debe tener al menos 8 caracteres.',
+    );
+  }
+
+  if (
+    normalizedPassword !==
+    String(confirmPassword || '')
+  ) {
+    throw new Error(
+      'Las contraseñas no coinciden.',
+    );
+  }
+
+  const client = requireSupabase();
+
+  const {
+    data: sessionData,
+    error: sessionError,
+  } = await client.auth.getSession();
+
+  if (
+    sessionError ||
+    !sessionData?.session
+  ) {
+    throw new Error(
+      'El enlace de recuperación venció o no es válido. Solicitá uno nuevo.',
+    );
+  }
+
+  const { error } =
+    await client.auth.updateUser({
+      password: normalizedPassword,
+    });
+
+  if (error) {
+    throw new Error(
+      translateAuthError(error),
+    );
+  }
+
+  clearCachedAccount();
+
+  await client.auth.signOut({
+    scope: 'local',
+  });
+
+  return true;
+}
+
 export async function logoutUser() {
   if (isSupabaseConfigured) {
     try {
