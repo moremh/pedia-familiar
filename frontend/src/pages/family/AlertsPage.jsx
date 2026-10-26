@@ -9,6 +9,7 @@ import { getChildren } from '../../services/childrenService.js';
 import { getTreatments } from '../../services/treatmentsService.js';
 import { getVaccines } from '../../services/vaccinesService.js';
 import { getAppointments } from '../../services/appointmentsService.js';
+import { getConsultations } from '../../services/consultationsService.js';
 
 import {
   getReminderRecords,
@@ -50,6 +51,13 @@ function AlertsPage() {
     getAppointments(),
   );
 
+  const [
+    consultations,
+    setConsultations,
+  ] = useState(() =>
+    getConsultations(),
+  );
+
   const [cabinetItems, setCabinetItems] =
     useState(() =>
       getMedicineCabinetItems(),
@@ -76,6 +84,7 @@ function AlertsPage() {
         vaccines,
         cabinetItems,
         appointments,
+        consultations,
       }),
     [
       children,
@@ -84,6 +93,7 @@ function AlertsPage() {
       vaccines,
       cabinetItems,
       appointments,
+      consultations,
     ],
   );
 
@@ -170,6 +180,10 @@ function AlertsPage() {
 
     setAppointments(
       getAppointments(),
+    );
+
+    setConsultations(
+      getConsultations(),
     );
 
     setCabinetItems(
@@ -396,6 +410,10 @@ function AlertsPage() {
 
           <option value="appointment">
             Turnos
+          </option>
+
+          <option value="followup">
+            Seguimientos
           </option>
         </select>
       </section>
