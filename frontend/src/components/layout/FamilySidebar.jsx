@@ -241,6 +241,21 @@ function FamilySidebar({
       </nav>
 
       <div className="family-sidebar__footer">
+        <NavLink
+          to="/dashboard/help"
+          className={({ isActive }) =>
+            `family-sidebar__link ${
+              isActive
+                ? 'is-active'
+                : ''
+            }`
+          }
+          onClick={onClose}
+        >
+          <i className="bi bi-question-circle" />
+          <span>Ayuda</span>
+        </NavLink>
+
         {!limitedAccess && (
           <NavLink
             to="/dashboard/settings"
