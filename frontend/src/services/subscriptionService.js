@@ -28,8 +28,8 @@ export const SUBSCRIPTION_PLANS = {
     id: 'monthly',
     name: 'Plan mensual',
     shortName: 'Mensual',
-    amount: 15000,
-    baseAmount: 15000,
+    amount: 25000,
+    baseAmount: 25000,
     duration: '1 mes',
     durationMonths: 1,
     isActive: true,
@@ -43,8 +43,8 @@ export const SUBSCRIPTION_PLANS = {
     id: 'annual',
     name: 'Plan anual',
     shortName: 'Anual',
-    amount: 100000,
-    baseAmount: 100000,
+    amount: 150000,
+    baseAmount: 150000,
     duration: '1 año',
     durationMonths: 12,
     isActive: true,
@@ -180,6 +180,87 @@ export function clearCurrentFamilyId() {
   localStorage.removeItem(
     CURRENT_FAMILY_STORAGE_KEY,
   );
+}
+
+export async function refreshCurrentFamilyAccessState() {
+  const familyId =
+    getCurrentFamilyId();
+
+  if (!familyId) {
+    return null;
+  }
+
+  const client = requireSupabase();
+
+  const {
+    data,
+    error,
+  } = await client
+    .from('families')
+    .select(
+      'id, family_name, access_status, current_plan, requested_plan, trial_started_at, trial_ends_at, current_period_start, current_period_end, children_count, members_count, children_limit_override',
+    )
+    .eq('id', familyId)
+    .single();
+
+  if (error || !data) {
+    if (
+      typeof navigator !== 'undefined' &&
+      navigator.onLine === false
+    ) {
+      return getCurrentFamilySubscription();
+    }
+
+    throw new Error(
+      error?.message ||
+        'No se pudo actualizar el estado de la suscripción.',
+    );
+  }
+
+  const current =
+    getCurrentFamilySubscription() || {
+      id: familyId,
+    };
+
+  const updated = {
+    ...current,
+    id: data.id,
+    familyName:
+      data.family_name ||
+      current.familyName ||
+      '',
+    status:
+      data.access_status ||
+      current.status ||
+      'expired',
+    plan:
+      data.current_plan ||
+      current.plan ||
+      'none',
+    requestedPlan:
+      data.requested_plan || '',
+    trialStartedAt:
+      data.trial_started_at || null,
+    trialEndsAt:
+      data.trial_ends_at || null,
+    subscriptionStartedAt:
+      data.current_period_start || null,
+    subscriptionEndsAt:
+      data.current_period_end || null,
+    childrenCount:
+      Number(data.children_count || 0),
+    membersCount:
+      Number(data.members_count || 0),
+    childrenLimitOverride:
+      data.children_limit_override ?? null,
+  };
+
+  localStorage.setItem(
+    'mipeque-admin-families',
+    JSON.stringify([updated]),
+  );
+
+  return updated;
 }
 
 export function getCurrentFamilySubscription() {

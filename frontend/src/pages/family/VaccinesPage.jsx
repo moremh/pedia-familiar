@@ -25,7 +25,10 @@ import {
 
 import {
   NATIONAL_VACCINE_CALENDAR,
+  NATIONAL_VACCINE_CALENDAR_REVIEWED_AT,
+  NATIONAL_VACCINE_CALENDAR_SOURCE_URL,
   NATIONAL_VACCINE_CALENDAR_TOTAL,
+  NATIONAL_VACCINE_CALENDAR_VERSION,
 } from '../../utils/vaccineCalendarData.js';
 
 import {
@@ -371,7 +374,17 @@ function VaccinesPage() {
                 Vacunas por edad
               </h3>
               <p>
-                Se muestran todas las etapas, desde el nacimiento hasta los 20 años.
+                Referencia del Calendario Nacional de Vacunación {NATIONAL_VACCINE_CALENDAR_VERSION}.
+                {' '}
+                <a
+                  href={NATIONAL_VACCINE_CALENDAR_SOURCE_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Fuente oficial
+                </a>
+                {' · '}
+                revisión {NATIONAL_VACCINE_CALENDAR_REVIEWED_AT}.
               </p>
             </div>
 

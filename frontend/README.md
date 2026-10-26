@@ -1,31 +1,28 @@
-# MiPeque
+# MiPeque Frontend
 
-MiPeque es una aplicación web familiar para organizar información de salud infantil: hijos, consultas, tratamientos, recordatorios, vacunas, documentos médicos, botiquín y responsables.
-
-## Tecnologías
-
-- React + Vite
-- React Router
-- Supabase Auth, Database y Storage
-- Bootstrap y Bootstrap Icons
-- PWA instalable
+Aplicación React/Vite de MiPeque.
 
 ## Requisitos
 
-- Node.js 20 o superior
-- Un proyecto de Supabase con las migraciones de MiPeque aplicadas
+- Node.js 20 o superior.
+- Proyecto Supabase con las migraciones del repositorio aplicadas.
 
 ## Configuración
 
-1. Copiá `.env.example` como `.env.local`.
-2. Completá la URL y la clave pública de Supabase.
-3. No coloques una clave `secret` o `service_role` en el frontend.
+```bash
+cp .env.example .env.local
+```
+
+Variables:
 
 ```env
 VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_tu_clave_publica
 VITE_ADMIN_WHATSAPP=549381XXXXXXXX
+VITE_VAPID_PUBLIC_KEY=TU_CLAVE_PUBLICA_VAPID
 ```
+
+La clave VAPID del frontend es pública. La clave VAPID privada y `PUSH_CRON_SECRET` deben existir únicamente como secretos de Supabase.
 
 ## Desarrollo
 
@@ -34,38 +31,47 @@ npm install
 npm run dev
 ```
 
-## Comprobación de producción
+## Calidad
 
 ```bash
+npm run lint
+npm test
 npm run build
 npm run preview
 ```
 
-## Crear la cuenta administradora
+Las páginas se cargan de forma diferida con `React.lazy` para reducir el bundle inicial.
 
-1. En Supabase abrí `Authentication → Users → Add user` y creá la cuenta administrativa. Marcala como confirmada.
-2. En el SQL Editor del proyecto ejecutá:
+## PWA y notificaciones
 
-```sql
-select public.set_user_admin(
-  'tu-correo@ejemplo.com',
-  true
-);
+El service worker está en `public/sw.js`.
+
+Flujo de activación:
+
+1. Abrir MiPeque desde HTTPS.
+2. Ir a Configuración → Notificaciones push.
+3. Activar el dispositivo.
+4. Aceptar el permiso del navegador.
+5. Enviar una notificación de prueba.
+
+En iPhone/iPad, MiPeque debe instalarse en la pantalla de inicio antes de activar Web Push.
+
+## Recuperación de contraseña
+
+La ruta pública es:
+
+```text
+/reset-password
 ```
 
-3. Cerrá la sesión e ingresá nuevamente. La cuenta será dirigida al panel administrador.
+Supabase Auth debe tener esa URL permitida como Redirect URL.
 
-Para quitar el rol administrador:
+## Centro de ayuda
 
-```sql
-select public.set_user_admin(
-  'tu-correo@ejemplo.com',
-  false
-);
+El manual de usuario se encuentra en:
+
+```text
+/dashboard/help
 ```
 
-## Datos y seguridad
-
-Las tablas están protegidas con políticas RLS. Los documentos se guardan en el bucket privado `medical-files`. El frontend utiliza únicamente la clave pública del proyecto.
-
-Los archivos `.env`, `.env.local`, `node_modules` y `dist` no deben subirse al repositorio.
+Está disponible tanto para responsables con acceso completo como para responsables con acceso limitado a tomas.

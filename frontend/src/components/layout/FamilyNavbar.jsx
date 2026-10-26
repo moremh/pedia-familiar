@@ -42,6 +42,8 @@ const pageTitles = {
     'Historial de medicamentos',
   '/dashboard/settings':
     'Configuración',
+  '/dashboard/help':
+    'Ayuda',
 };
 
 const dateFormatter =

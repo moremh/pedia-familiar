@@ -177,10 +177,10 @@ function getCurrentMonthPaymentTotal(
 
 const DEFAULT_COMMERCIAL_PLANS = {
   monthly: {
-    amount: 15000,
+    amount: 25000,
   },
   annual: {
-    amount: 100000,
+    amount: 150000,
   },
 };
 

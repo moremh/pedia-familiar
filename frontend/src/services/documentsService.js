@@ -1,4 +1,9 @@
 import {
+  isSupabaseConfigured,
+  requireSupabase,
+} from '../lib/supabaseClient.js';
+
+import {
   notifyFamilyDataChanged,
 } from './supabaseSyncService.js';
 
@@ -144,4 +149,40 @@ export function getDocumentsByChild(childId) {
   return getDocuments().filter(
     (document) => document.childId === childId,
   );
+}
+export async function refreshDocumentFile(document) {
+  const file = document?.file;
+
+  if (!file) {
+    return null;
+  }
+
+  if (
+    !file.storagePath ||
+    !isSupabaseConfigured
+  ) {
+    return file;
+  }
+
+  const client = requireSupabase();
+
+  const { data, error } =
+    await client.storage
+      .from('medical-files')
+      .createSignedUrl(
+        file.storagePath,
+        60 * 60,
+      );
+
+  if (error || !data?.signedUrl) {
+    throw new Error(
+      error?.message ||
+        'No se pudo preparar el archivo médico.',
+    );
+  }
+
+  return {
+    ...file,
+    dataUrl: data.signedUrl,
+  };
 }
