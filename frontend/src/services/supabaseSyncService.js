@@ -985,35 +985,177 @@ export function clearCachedAccount() {
   });
 }
 
+function getCachedOfflineContext() {
+  const session = readJson(
+    STORAGE_KEYS.session,
+    null,
+  );
+
+  if (!session) {
+    return null;
+  }
+
+  const users = readJson(
+    STORAGE_KEYS.users,
+    [],
+  );
+
+  const families = readJson(
+    STORAGE_KEYS.adminFamilies,
+    [],
+  );
+
+  const user = Array.isArray(users)
+    ? users.find(
+        (storedUser) =>
+          storedUser.id === session.userId &&
+          storedUser.status === 'active',
+      ) || null
+    : null;
+
+  if (!user) {
+    return null;
+  }
+
+  if (session.role === 'admin') {
+    return {
+      session,
+      user,
+      family: null,
+      offline: true,
+    };
+  }
+
+  const family = Array.isArray(families)
+    ? families.find(
+        (storedFamily) =>
+          storedFamily.id === session.familyId,
+      ) || null
+    : null;
+
+  if (!family) {
+    return null;
+  }
+
+  return {
+    session,
+    user,
+    family,
+    offline: true,
+  };
+}
+
+function isLikelyNetworkError(error) {
+  const message = String(
+    error?.message || error || '',
+  ).toLowerCase();
+
+  return (
+    message.includes('failed to fetch') ||
+    message.includes('network') ||
+    message.includes('offline') ||
+    message.includes('load failed') ||
+    message.includes('fetch')
+  );
+}
+
+let connectivityListenersInstalled = false;
+
+function installConnectivitySync() {
+  if (
+    connectivityListenersInstalled ||
+    typeof window === 'undefined'
+  ) {
+    return;
+  }
+
+  connectivityListenersInstalled = true;
+
+  window.addEventListener('online', () => {
+    flushPendingRemoteSync().catch((error) => {
+      console.error(
+        'No se pudieron sincronizar los cambios pendientes al recuperar la conexión.',
+        error,
+      );
+    });
+  });
+}
+
 export async function initializeSupabaseCache() {
   if (initializationPromise) {
     return initializationPromise;
   }
 
+  installConnectivitySync();
+
   initializationPromise = (async () => {
+    const cachedContext =
+      getCachedOfflineContext();
+
     if (!isSupabaseConfigured) {
-      return null;
+      return cachedContext;
     }
 
     const client = requireSupabase();
-    const { data, error } = await client.auth.getUser();
+
+    let authResult;
+
+    try {
+      authResult =
+        await client.auth.getUser();
+    } catch (error) {
+      if (
+        cachedContext &&
+        isLikelyNetworkError(error)
+      ) {
+        return cachedContext;
+      }
+
+      throw error;
+    }
+
+    const { data, error } =
+      authResult;
 
     if (error || !data?.user) {
+      if (
+        cachedContext &&
+        (
+          typeof navigator !== 'undefined' &&
+          navigator.onLine === false ||
+          isLikelyNetworkError(error)
+        )
+      ) {
+        return cachedContext;
+      }
+
       clearCachedAccount();
       return null;
     }
 
-    const context = await loadCurrentAccountCache(
-      data.user,
-    );
+    try {
+      const context =
+        await loadCurrentAccountCache(
+          data.user,
+        );
 
-    if (context?.missingFamily) {
-      clearCachedAccount();
-      await client.auth.signOut();
-      return null;
+      if (context?.missingFamily) {
+        clearCachedAccount();
+        await client.auth.signOut();
+        return null;
+      }
+
+      return context;
+    } catch (error) {
+      if (
+        cachedContext &&
+        isLikelyNetworkError(error)
+      ) {
+        return cachedContext;
+      }
+
+      throw error;
     }
-
-    return context;
   })().finally(() => {
     initializationPromise = null;
   });
@@ -1722,11 +1864,33 @@ export async function flushPendingRemoteSync() {
     syncTimer = null;
   }
 
-  const keys = SYNC_PRIORITY.filter((key) => pendingSyncKeys.has(key));
-  pendingSyncKeys.clear();
+  const keys = SYNC_PRIORITY.filter(
+    (key) => pendingSyncKeys.has(key),
+  );
 
-  for (const key of keys) {
-    await syncStorageKey(key);
+  for (
+    let index = 0;
+    index < keys.length;
+    index += 1
+  ) {
+    const key = keys[index];
+
+    try {
+      await syncStorageKey(key);
+      pendingSyncKeys.delete(key);
+    } catch (error) {
+      for (
+        let pendingIndex = index;
+        pendingIndex < keys.length;
+        pendingIndex += 1
+      ) {
+        pendingSyncKeys.add(
+          keys[pendingIndex],
+        );
+      }
+
+      throw error;
+    }
   }
 }
 
