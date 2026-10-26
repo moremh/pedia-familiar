@@ -28,14 +28,59 @@ if (
   'serviceWorker' in navigator &&
   import.meta.env.PROD
 ) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/sw.js')
-      .catch((error) => {
-        console.error(
-          'No se pudo registrar el service worker.',
-          error,
-        );
-      });
+  const UPDATE_INTERVAL_MS =
+    60 * 60 * 1000;
+
+  window.addEventListener('load', async () => {
+    try {
+      const registration =
+        await navigator.serviceWorker
+          .register('/sw.js');
+
+      const checkForUpdates =
+        async () => {
+          if (!navigator.onLine) {
+            return;
+          }
+
+          try {
+            await registration.update();
+          } catch (error) {
+            console.warn(
+              'MiPeque no pudo comprobar si existe una actualización del Service Worker.',
+              error,
+            );
+          }
+        };
+
+      await checkForUpdates();
+
+      window.setInterval(
+        checkForUpdates,
+        UPDATE_INTERVAL_MS,
+      );
+
+      window.addEventListener(
+        'online',
+        checkForUpdates,
+      );
+
+      document.addEventListener(
+        'visibilitychange',
+        () => {
+          if (
+            document.visibilityState ===
+            'visible'
+          ) {
+            void checkForUpdates();
+          }
+        },
+      );
+    } catch (error) {
+      console.error(
+        'No se pudo registrar el Service Worker de MiPeque.',
+        error,
+      );
+    }
   });
 }
