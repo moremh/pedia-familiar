@@ -165,6 +165,11 @@ function CommercialSettingsPanel({
       extraChildPrice: 5000,
     });
 
+  const [contactForm, setContactForm] =
+    useState({
+      supportWhatsapp: '',
+    });
+
   const [promotionForm, setPromotionForm] =
     useState(
       getDefaultPromotionForm,
@@ -180,6 +185,9 @@ function CommercialSettingsPanel({
     useState(false);
 
   const [isSavingChildSettings, setIsSavingChildSettings] =
+    useState(false);
+
+  const [isSavingContact, setIsSavingContact] =
     useState(false);
 
   const [isSavingPromotion, setIsSavingPromotion] =
@@ -242,6 +250,12 @@ function CommercialSettingsPanel({
           extraChildPrice:
             settings.childSettings
               ?.extraChildPrice ?? 5000,
+        });
+
+        setContactForm({
+          supportWhatsapp:
+            settings.contactSettings
+              ?.supportWhatsapp ?? '',
         });
 
         onChildSettingsChange?.(
@@ -406,6 +420,52 @@ function CommercialSettingsPanel({
       });
     } finally {
       setIsSavingChildSettings(false);
+    }
+  }
+
+  function handleContactChange(event) {
+    const { name, value } =
+      event.target;
+
+    setContactForm(
+      (currentForm) => ({
+        ...currentForm,
+        [name]: value,
+      }),
+    );
+  }
+
+  async function handleSaveContact(event) {
+    event.preventDefault();
+    setIsSavingContact(true);
+    setFeedback(null);
+
+    try {
+      const updatedContact =
+        await updateCommercialContactSettings({
+          supportWhatsapp:
+            contactForm.supportWhatsapp,
+        });
+
+      setContactForm({
+        supportWhatsapp:
+          updatedContact.supportWhatsapp,
+      });
+
+      setFeedback({
+        type: 'success',
+        message:
+          'El contacto de WhatsApp se actualizó correctamente.',
+      });
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        message:
+          error.message ||
+          'No se pudo guardar el contacto.',
+      });
+    } finally {
+      setIsSavingContact(false);
     }
   }
 
@@ -722,6 +782,56 @@ function CommercialSettingsPanel({
           {isSavingPrices
             ? 'Guardando...'
             : 'Guardar precios'}
+        </button>
+      </form>
+
+      <div className="commercial-divider" />
+
+      <form
+        className="commercial-child-settings"
+        onSubmit={handleSaveContact}
+      >
+        <header className="commercial-child-settings__header">
+          <span>
+            <i className="bi bi-whatsapp" />
+          </span>
+
+          <div>
+            <small>Contacto comercial</small>
+            <h3>WhatsApp de MiPeque</h3>
+            <p>
+              Este número se usa para soporte y para
+              que las familias contacten por pagos.
+            </p>
+          </div>
+        </header>
+
+        <div className="commercial-child-settings__grid">
+          <label>
+            Número con código de país
+            <input
+              type="tel"
+              name="supportWhatsapp"
+              value={contactForm.supportWhatsapp}
+              onChange={handleContactChange}
+              placeholder="549381..."
+              inputMode="numeric"
+            />
+            <small>
+              Escribilo solo con números, sin +, espacios ni guiones.
+            </small>
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={isSavingContact}
+        >
+          <i className="bi bi-floppy" />
+          {isSavingContact
+            ? 'Guardando...'
+            : 'Guardar WhatsApp'}
         </button>
       </form>
 

@@ -26,8 +26,6 @@ const VAPID_PRIVATE_KEY =
   Deno.env.get('VAPID_PRIVATE_KEY') || ''
 const VAPID_SUBJECT =
   Deno.env.get('VAPID_SUBJECT') || ''
-const PUSH_CRON_SECRET =
-  Deno.env.get('PUSH_CRON_SECRET') || ''
 
 type PushSubscriptionRow = {
   id: string
@@ -891,23 +889,30 @@ async function sendTestNotification(
 async function dispatchNotifications(request: Request) {
   assertServerConfiguration()
 
-  if (!PUSH_CRON_SECRET) {
-    return jsonResponse(
-      {
-        ok: false,
-        message:
-          'Falta configurar PUSH_CRON_SECRET.',
-      },
-      500,
-    )
-  }
-
   const suppliedSecret =
     request.headers.get(
       'x-mipeque-cron-secret',
     ) || ''
 
-  if (suppliedSecret !== PUSH_CRON_SECRET) {
+  const admin = createClient(
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
+  )
+
+  const {
+    data: cronAuthorized,
+    error: cronAuthError,
+  } = await admin.rpc(
+    'is_valid_push_cron_secret',
+    {
+      p_secret: suppliedSecret,
+    },
+  )
+
+  if (
+    cronAuthError ||
+    cronAuthorized !== true
+  ) {
     return jsonResponse(
       {
         ok: false,
@@ -916,11 +921,6 @@ async function dispatchNotifications(request: Request) {
       401,
     )
   }
-
-  const admin = createClient(
-    SUPABASE_URL,
-    SUPABASE_SERVICE_ROLE_KEY,
-  )
 
   webpush.setVapidDetails(
     VAPID_SUBJECT,
