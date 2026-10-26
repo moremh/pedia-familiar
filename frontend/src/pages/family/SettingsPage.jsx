@@ -302,7 +302,15 @@ function SettingsPage() {
         pushPreferences,
       );
 
-      await refreshPushState();
+      const state =
+        await refreshPushState();
+
+      if (!state.subscribed) {
+        throw new Error(
+          state.remoteRegistrationError ||
+            'El navegador concedió el permiso, pero MiPeque no pudo registrar este dispositivo. Revisá la conexión y volvé a intentarlo.',
+        );
+      }
 
       showMessage(
         'success',
@@ -1018,7 +1026,10 @@ function SettingsPage() {
                           ? 'Falta configurar la clave pública VAPID del proyecto.'
                           : pushState.subscribed
                             ? 'Este dispositivo recibirá los avisos seleccionados abajo.'
-                            : 'Activá las notificaciones para comenzar a recibir avisos en este dispositivo.'}
+                            : pushState.browserSubscribed
+                              ? pushState.remoteRegistrationError ||
+                                'El navegador está preparado, pero falta completar el registro del dispositivo en MiPeque.'
+                              : 'Activá las notificaciones para comenzar a recibir avisos en este dispositivo.'}
               </p>
             </div>
 
