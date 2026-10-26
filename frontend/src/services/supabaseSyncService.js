@@ -300,6 +300,12 @@ function mapSettingsRow(row, family) {
     phone: row?.phone || '',
     defaultCaregiverId: row?.default_caregiver_id || '',
     reminderAdvanceMinutes: Number(row?.reminder_advance_minutes ?? 15),
+    dailyAlertTime:
+      row?.daily_alert_time
+        ? String(
+            row.daily_alert_time,
+          ).slice(0, 5)
+        : '09:00',
     expirationWarningDays: Number(row?.expiration_warning_days ?? 30),
     vaccineWarningDays: Number(row?.vaccine_warning_days ?? 30),
     showOverdueAlerts: row?.show_overdue_alerts ?? true,
@@ -1593,6 +1599,27 @@ async function syncSettings(client, familyId) {
     throw new Error(
       error.message ||
         'No se pudo guardar la configuración familiar.',
+    );
+  }
+
+  const {
+    error: dailyAlertError,
+  } = await client.rpc(
+    'save_family_daily_alert_time',
+    {
+      p_family_id: familyId,
+      p_daily_alert_time:
+        String(
+          settings.dailyAlertTime ||
+            '09:00',
+        ).slice(0, 5),
+    },
+  );
+
+  if (dailyAlertError) {
+    throw new Error(
+      dailyAlertError.message ||
+        'No se pudo guardar la hora diaria de alertas.',
     );
   }
 }
