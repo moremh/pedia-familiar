@@ -13,6 +13,7 @@ import {
 
 import FamilyNavbar from './FamilyNavbar.jsx';
 import FamilySidebar from './FamilySidebar.jsx';
+import InAppNotificationCenter from '../notifications/InAppNotificationCenter.jsx';
 
 import {
   getCurrentFamilySubscription,
@@ -177,6 +178,7 @@ function FamilyLayout() {
 
   return (
     <div className="family-layout">
+      <InAppNotificationCenter />
       <FamilySidebar
         isOpen={sidebarOpen}
         onClose={() =>
