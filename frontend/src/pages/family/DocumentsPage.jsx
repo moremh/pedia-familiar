@@ -12,6 +12,7 @@ import {
   createDocument,
   deleteDocument,
   getDocuments,
+  refreshDocumentFile,
   updateDocument,
 } from '../../services/documentsService.js';
 
@@ -60,6 +61,9 @@ function DocumentsPage() {
 
   const [selectedDocument, setSelectedDocument] =
     useState(null);
+
+  const [documentFileError, setDocumentFileError] =
+    useState('');
 
   useEffect(() => {
     const modalIsOpen =
@@ -242,6 +246,34 @@ function DocumentsPage() {
   function closeForm() {
     setEditingDocument(null);
     setIsFormOpen(false);
+  }
+
+  async function openDocumentDetail(document) {
+    setDocumentFileError('');
+    setSelectedDocument(document);
+
+    if (!document?.file?.storagePath) {
+      return;
+    }
+
+    try {
+      const refreshedFile =
+        await refreshDocumentFile(document);
+
+      setSelectedDocument((currentDocument) =>
+        currentDocument?.id === document.id
+          ? {
+              ...currentDocument,
+              file: refreshedFile,
+            }
+          : currentDocument,
+      );
+    } catch (error) {
+      setDocumentFileError(
+        error.message ||
+          'No se pudo abrir el archivo. Volvé a intentarlo.',
+      );
+    }
   }
 
   async function handleSaveDocument(data) {
@@ -495,7 +527,7 @@ function DocumentsPage() {
                     document.treatmentId
                   ]
                 }
-                onView={setSelectedDocument}
+                onView={openDocumentDetail}
                 onEdit={openEditForm}
                 onDelete={
                   handleDeleteDocument
@@ -751,6 +783,12 @@ function DocumentsPage() {
                   <i className="bi bi-paperclip" />
                   Archivo adjunto
                 </h4>
+
+                {documentFileError && (
+                  <div className="alert alert-danger py-2" role="alert">
+                    {documentFileError}
+                  </div>
+                )}
 
                 {selectedDocument.file ? (
                   <>
