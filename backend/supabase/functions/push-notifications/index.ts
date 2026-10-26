@@ -138,7 +138,9 @@ type AppointmentRow = {
   specialty: string
   medical_center: string
   reminder_enabled: boolean
+  reminder_mode: string
   reminder_minutes_before: number
+  reminder_at: string | null
   status: string
 }
 
@@ -1178,7 +1180,7 @@ async function dispatchNotifications(request: Request) {
     admin
       .from('appointments')
       .select(
-        'id, family_id, child_id, appointment_date, appointment_time, reason, professional_name, specialty, medical_center, reminder_enabled, reminder_minutes_before, status',
+        'id, family_id, child_id, appointment_date, appointment_time, reason, professional_name, specialty, medical_center, reminder_enabled, reminder_mode, reminder_minutes_before, reminder_at, status',
       )
       .in('family_id', familyIds)
       .eq('status', 'scheduled')
@@ -1570,13 +1572,34 @@ async function dispatchNotifications(request: Request) {
         ),
       )
 
-    const sendAt =
-      new Date(
-        appointmentAt.getTime() -
-          reminderMinutes *
-            60 *
-            1000,
-      )
+    let sendAt: Date
+
+    if (
+      appointment.reminder_mode ===
+        'exact' &&
+      appointment.reminder_at
+    ) {
+      sendAt =
+        new Date(
+          appointment.reminder_at,
+        )
+
+      if (
+        Number.isNaN(
+          sendAt.getTime(),
+        )
+      ) {
+        continue
+      }
+    } else {
+      sendAt =
+        new Date(
+          appointmentAt.getTime() -
+            reminderMinutes *
+              60 *
+              1000,
+        )
+    }
 
     if (
       !isInsideDispatchWindow(
@@ -1616,16 +1639,18 @@ async function dispatchNotifications(request: Request) {
       referenceId:
         appointment.id,
       dedupeKey:
-        `appointment-warning:${appointment.id}:${appointment.appointment_date}:${localTime}:${reminderMinutes}`,
+        `appointment-warning:${appointment.id}:${appointment.reminder_mode || 'relative'}:${sendAt.toISOString()}`,
       sendAt,
       navigateTo:
         '/dashboard/appointments',
       privateTitle:
         'Recordatorio de turno',
       privateBody:
-        reminderMinutes > 0
-          ? 'Tenés un turno médico próximo registrado en MiPeque.'
-          : 'Llegó la hora de un turno médico registrado en MiPeque.',
+        appointment.reminder_mode === 'exact'
+          ? 'Llegó el momento que elegiste para recordar este turno.'
+          : reminderMinutes > 0
+            ? 'Tenés un turno médico próximo registrado en MiPeque.'
+            : 'Llegó la hora de un turno médico registrado en MiPeque.',
       detailedTitle:
         `Turno de ${childName}`,
       detailedBody:

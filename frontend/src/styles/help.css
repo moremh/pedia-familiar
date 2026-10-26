@@ -211,6 +211,21 @@
   font-size: 0.78rem;
 }
 
+.help-support__number {
+  display: block;
+  margin-top: 6px;
+  color: #2d4356;
+  font-size: 0.82rem;
+}
+
+.help-support__hint {
+  display: block;
+  margin-top: 6px;
+  color: #8796a3;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
 .help-support .btn {
   display: inline-flex;
   align-items: center;

@@ -379,11 +379,17 @@ function mapAppointmentRow(row) {
       row.medical_center || '',
     reminderEnabled:
       row.reminder_enabled !== false,
+    reminderMode:
+      row.reminder_mode === 'exact'
+        ? 'exact'
+        : 'relative',
     reminderMinutesBefore:
       Number(
         row.reminder_minutes_before ??
           30,
       ),
+    reminderAt:
+      row.reminder_at || '',
     status:
       row.status || 'scheduled',
     notes: row.notes || '',
@@ -1428,11 +1434,20 @@ function appointmentToRow(
     reminder_enabled:
       appointment.reminderEnabled !==
       false,
+    reminder_mode:
+      appointment.reminderMode ===
+      'exact'
+        ? 'exact'
+        : 'relative',
     reminder_minutes_before:
       Number(
         appointment
           .reminderMinutesBefore ??
           30,
+      ),
+    reminder_at:
+      nullable(
+        appointment.reminderAt,
       ),
     status:
       appointment.status ||
