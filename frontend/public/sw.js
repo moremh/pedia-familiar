@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mipeque-shell-v3';
+const CACHE_NAME = 'mipeque-shell-v4';
 
 const APP_SHELL = [
   '/',
@@ -136,12 +136,30 @@ self.addEventListener('push', (event) => {
       '/icons/icon-192.png',
     badge:
       payload.badge ||
-      '/icons/favicon-32x32.png',
+      '/icons/icon-192.png',
     tag:
       payload.tag ||
       `mipeque-${Date.now()}`,
-    renotify: false,
+
+    // Pedimos el comportamiento de una notificación
+    // normal del sistema. El navegador y el sistema
+    // operativo deciden finalmente sonido, banner y
+    // superposición según la configuración del usuario.
+    renotify: true,
     silent: false,
+    requireInteraction: true,
+    vibrate: [250, 120, 250],
+    timestamp:
+      Number(payload.timestamp) ||
+      Date.now(),
+
+    actions: [
+      {
+        action: 'open',
+        title: 'Abrir MiPeque',
+      },
+    ],
+
     data: {
       url,
       category:
