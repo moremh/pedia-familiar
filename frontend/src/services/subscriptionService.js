@@ -7,6 +7,7 @@ import {
 } from '../lib/supabaseClient.js';
 
 import {
+  getCommercialContactSettings,
   getPublicSubscriptionOffers,
 } from './commercialSettingsService.js';
 
@@ -17,7 +18,7 @@ import {
 const CURRENT_FAMILY_STORAGE_KEY =
   'mipeque-current-family-id';
 
-const ADMIN_WHATSAPP_NUMBER =
+let adminWhatsAppNumber =
   String(
     import.meta.env
       .VITE_ADMIN_WHATSAPP || '',
@@ -91,8 +92,17 @@ export function getSubscriptionPlans() {
 }
 
 export async function refreshSubscriptionPlans() {
-  const offers =
-    await getPublicSubscriptionOffers();
+  const [
+    offers,
+    contactSettings,
+  ] = await Promise.all([
+    getPublicSubscriptionOffers(),
+    getCommercialContactSettings(),
+  ]);
+
+  adminWhatsAppNumber =
+    contactSettings.supportWhatsapp ||
+    adminWhatsAppNumber;
 
   return applySubscriptionOffers(
     offers,
@@ -486,8 +496,8 @@ export function buildPaymentWhatsAppUrl(
     .join('\n');
 
   const baseUrl =
-    ADMIN_WHATSAPP_NUMBER
-      ? `https://wa.me/${ADMIN_WHATSAPP_NUMBER}`
+    adminWhatsAppNumber
+      ? `https://wa.me/${adminWhatsAppNumber}`
       : 'https://wa.me/';
 
   return `${baseUrl}?text=${encodeURIComponent(
