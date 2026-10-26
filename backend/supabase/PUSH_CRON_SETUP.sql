@@ -1,13 +1,15 @@
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
+-- Reemplazá estos placeholders antes de ejecutar este archivo.
+-- Nunca guardes secretos reales en Git.
 select vault.create_secret(
-  'https://gatkzjldibknvprgjvxi.supabase.co',
+  'https://TU-PROYECTO.supabase.co',
   'mipeque_project_url'
 );
 
 select vault.create_secret(
-  'cdfe5eb17eac763eb2d0bb7a405306ba4420809e5207f26e36303aa1e309e3d8',
+  'TU_CRON_SECRET',
   'mipeque_push_cron_secret'
 );
 
