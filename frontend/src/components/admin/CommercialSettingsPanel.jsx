@@ -13,6 +13,7 @@ import {
   updatePromotion,
   updateSubscriptionPlan,
   updateChildLimitSettings,
+  updateCommercialContactSettings,
 } from '../../services/commercialSettingsService.js';
 
 const currencyFormatter =
