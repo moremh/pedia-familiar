@@ -24,6 +24,8 @@ const pageTitles = {
     'Mis hijos',
   '/dashboard/consultations':
     'Consultas médicas',
+  '/dashboard/appointments':
+    'Turnos médicos',
   '/dashboard/treatments':
     'Tratamientos',
   '/dashboard/reminders':
