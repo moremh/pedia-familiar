@@ -116,6 +116,39 @@ function isStandaloneApp() {
   );
 }
 
+function applicationServerKeysMatch(
+  subscription,
+  expectedKey,
+) {
+  const currentKey =
+    subscription?.options
+      ?.applicationServerKey;
+
+  if (!currentKey) {
+    return false;
+  }
+
+  const expected =
+    urlBase64ToUint8Array(
+      expectedKey,
+    );
+
+  const current =
+    new Uint8Array(currentKey);
+
+  if (
+    current.length !==
+    expected.length
+  ) {
+    return false;
+  }
+
+  return current.every(
+    (value, index) =>
+      value === expected[index],
+  );
+}
+
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat(
     (4 - (base64String.length % 4)) % 4,
@@ -388,10 +421,32 @@ export async function getPushNotificationState() {
     };
   }
 
-  const remoteSubscription =
+  let remoteSubscription =
     await findRemoteSubscription(
       browserSubscription.endpoint,
     );
+
+  if (
+    !remoteSubscription &&
+    Notification.permission === 'granted'
+  ) {
+    try {
+      await registerRemoteSubscription(
+        browserSubscription,
+        readStoredPreferences(),
+      );
+
+      remoteSubscription =
+        await findRemoteSubscription(
+          browserSubscription.endpoint,
+        );
+    } catch (error) {
+      console.error(
+        'El navegador está suscripto, pero no se pudo reparar el registro remoto.',
+        error,
+      );
+    }
+  }
 
   const preferences =
     mapDatabasePreferences(
@@ -469,15 +524,42 @@ export async function enablePushNotifications(
   let subscription =
     await registration.pushManager.getSubscription();
 
+  if (
+    subscription &&
+    !applicationServerKeysMatch(
+      subscription,
+      VAPID_PUBLIC_KEY,
+    )
+  ) {
+    try {
+      await subscription.unsubscribe();
+    } catch (error) {
+      console.error(
+        'No se pudo reemplazar una suscripción push anterior.',
+        error,
+      );
+    }
+
+    subscription = null;
+  }
+
   if (!subscription) {
-    subscription =
-      await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey:
-          urlBase64ToUint8Array(
-            VAPID_PUBLIC_KEY,
-          ),
-      });
+    try {
+      subscription =
+        await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey:
+            urlBase64ToUint8Array(
+              VAPID_PUBLIC_KEY,
+            ),
+        });
+    } catch (error) {
+      throw new Error(
+        error?.message
+          ? `No se pudo crear la suscripción push: ${error.message}`
+          : 'No se pudo crear la suscripción push en este navegador.',
+      );
+    }
   }
 
   const remote =
