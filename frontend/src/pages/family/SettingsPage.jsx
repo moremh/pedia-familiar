@@ -5,6 +5,10 @@ import {
 } from 'react';
 
 import { getChildren } from '../../services/childrenService.js';
+
+import {
+  deleteCurrentAccount,
+} from '../../services/authService.js';
 import { getConsultations } from '../../services/consultationsService.js';
 import { getDocuments } from '../../services/documentsService.js';
 import { getTreatments } from '../../services/treatmentsService.js';
@@ -75,6 +79,9 @@ function SettingsPage() {
     useState(false);
 
   const [isDeleting, setIsDeleting] =
+    useState(false);
+
+  const [isDeletingAccount, setIsDeletingAccount] =
     useState(false);
 
   const [pushState, setPushState] =
@@ -400,6 +407,32 @@ function SettingsPage() {
       );
     } finally {
       setIsTestingPush(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    const confirmation = window.prompt(
+      'Esta acción elimina definitivamente tu cuenta. Si sos el responsable principal y no quedan otros responsables activos, también elimina la familia y sus datos. Escribí ELIMINAR para continuar.',
+    );
+
+    if (confirmation !== 'ELIMINAR') {
+      return;
+    }
+
+    setIsDeletingAccount(true);
+
+    try {
+      await deleteCurrentAccount();
+
+      window.location.assign('/login');
+    } catch (error) {
+      showMessage(
+        'error',
+        error.message ||
+          'No se pudo eliminar la cuenta.',
+      );
+    } finally {
+      setIsDeletingAccount(false);
     }
   }
 
@@ -1482,6 +1515,34 @@ function SettingsPage() {
           {isDeleting
             ? 'Eliminando datos...'
             : 'Eliminar información'}
+        </button>
+      </section>
+
+      <section className="family-settings-danger">
+        <div>
+          <span>
+            <i className="bi bi-person-x" />
+          </span>
+
+          <div>
+            <h3>Eliminar mi cuenta</h3>
+
+            <p>
+              Elimina definitivamente tu acceso a MiPeque. La cuenta principal no puede eliminarse mientras existan otros responsables con acceso activo.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="btn btn-outline-danger"
+          onClick={handleDeleteAccount}
+          disabled={isDeletingAccount}
+        >
+          <i className="bi bi-person-x" />
+          {isDeletingAccount
+            ? 'Eliminando cuenta...'
+            : 'Eliminar mi cuenta'}
         </button>
       </section>
     </div>
