@@ -1,0 +1,263 @@
+.help-page {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+}
+
+.help-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  margin-bottom: 20px;
+  padding: 30px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 90% 15%, rgba(255, 255, 255, 0.18), transparent 32%),
+    linear-gradient(130deg, #327f91, #245f70);
+  box-shadow: 0 18px 40px rgba(40, 111, 127, 0.18);
+  color: #fff;
+}
+
+.help-hero__eyebrow {
+  display: block;
+  margin-bottom: 7px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.help-hero h2 {
+  margin: 0 0 9px;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+}
+
+.help-hero p {
+  max-width: 720px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.65;
+}
+
+.help-hero__icon {
+  display: grid;
+  width: 74px;
+  height: 74px;
+  flex-shrink: 0;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 2rem;
+  place-items: center;
+}
+
+.help-search {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 20px;
+  padding: 0 16px;
+  border: 1px solid #dce6ec;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(35, 58, 78, 0.04);
+}
+
+.help-search > i {
+  color: #738594;
+}
+
+.help-search input {
+  min-height: 52px;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #30465a;
+}
+
+.help-search button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: #edf4f6;
+  color: #607585;
+  place-items: center;
+}
+
+.help-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.help-card {
+  padding: 22px;
+  border: 1px solid #e0e8ed;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(35, 58, 78, 0.04);
+}
+
+.help-card header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.help-card header > span {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  background: #e7f3f6;
+  color: #327f91;
+  place-items: center;
+}
+
+.help-card h3 {
+  margin: 0;
+  color: #293f52;
+  font-size: 1rem;
+}
+
+.help-card p {
+  margin: 0 0 12px;
+  color: #708292;
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+
+.help-card ol {
+  display: flex;
+  margin: 0;
+  padding-left: 20px;
+  flex-direction: column;
+  gap: 8px;
+  color: #526879;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.help-empty {
+  display: grid;
+  min-height: 260px;
+  padding: 30px;
+  border: 1px dashed #cbd9df;
+  border-radius: 20px;
+  background: #fff;
+  text-align: center;
+  place-items: center;
+  align-content: center;
+}
+
+.help-empty i {
+  margin-bottom: 12px;
+  color: #327f91;
+  font-size: 2rem;
+}
+
+.help-empty h3 {
+  margin: 0 0 7px;
+  color: #30465a;
+}
+
+.help-empty p {
+  max-width: 500px;
+  margin: 0;
+  color: #7d8c99;
+}
+
+.help-support {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+  padding: 20px 22px;
+  border: 1px solid #dce9ed;
+  border-radius: 19px;
+  background: #f7fbfc;
+}
+
+.help-support > span:first-child {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: #dff0f3;
+  color: #327f91;
+  place-items: center;
+}
+
+.help-support > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.help-support h3 {
+  margin: 0 0 4px;
+  color: #2d4356;
+  font-size: 0.95rem;
+}
+
+.help-support p {
+  margin: 0;
+  color: #758797;
+  font-size: 0.78rem;
+}
+
+.help-support .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.help-support__disabled {
+  color: #8796a3;
+  font-size: 0.75rem;
+}
+
+.help-disclaimer {
+  margin: 18px 0 0;
+  color: #8997a3;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  text-align: center;
+}
+
+@media (max-width: 820px) {
+  .help-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .help-hero {
+    align-items: flex-start;
+    padding: 24px 20px;
+  }
+
+  .help-hero__icon {
+    display: none;
+  }
+
+  .help-card {
+    padding: 19px;
+  }
+
+  .help-support {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .help-support .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
