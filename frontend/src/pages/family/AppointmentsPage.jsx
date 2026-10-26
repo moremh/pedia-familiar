@@ -37,6 +37,34 @@ function getAppointmentDate(
   );
 }
 
+function formatReminder(
+  appointment,
+) {
+  if (
+    appointment.reminderMode === 'exact' &&
+    appointment.reminderAt
+  ) {
+    const reminderAt =
+      new Date(
+        appointment.reminderAt,
+      );
+
+    if (
+      !Number.isNaN(
+        reminderAt.getTime(),
+      )
+    ) {
+      return `el ${dateTimeFormatter.format(
+        reminderAt,
+      )}`;
+    }
+  }
+
+  return formatAdvance(
+    appointment.reminderMinutesBefore,
+  );
+}
+
 function formatAdvance(
   minutes,
 ) {
@@ -275,9 +303,8 @@ function AppointmentsPage() {
             <small>
               <i className="bi bi-bell" />
               Aviso{' '}
-              {formatAdvance(
-                appointment
-                  .reminderMinutesBefore,
+              {formatReminder(
+                appointment,
               )}
             </small>
           )}
