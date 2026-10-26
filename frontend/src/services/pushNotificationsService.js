@@ -426,6 +426,8 @@ export async function getPushNotificationState() {
       browserSubscription.endpoint,
     );
 
+  let remoteRegistrationError = '';
+
   if (
     !remoteSubscription &&
     Notification.permission === 'granted'
@@ -441,6 +443,10 @@ export async function getPushNotificationState() {
           browserSubscription.endpoint,
         );
     } catch (error) {
+      remoteRegistrationError =
+        error?.message ||
+        'No se pudo registrar el dispositivo en MiPeque.';
+
       console.error(
         'El navegador está suscripto, pero no se pudo reparar el registro remoto.',
         error,
@@ -462,6 +468,7 @@ export async function getPushNotificationState() {
       remoteSubscription?.is_enabled,
     ),
     browserSubscribed: true,
+    remoteRegistrationError,
     subscriptionId:
       remoteSubscription?.id || null,
     preferences,
