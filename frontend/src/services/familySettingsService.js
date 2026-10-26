@@ -27,6 +27,7 @@ const BACKUP_STORAGE_KEYS = new Set([
   'mipeque-settings',
   'mipeque-children',
   'mipeque-consultations',
+  'mipeque-appointments',
   'mipeque-treatments',
   'mipeque-reminder-records',
   'mipeque-vaccines',
@@ -148,6 +149,11 @@ function createBackupSummary(
       getSnapshotCount(
         snapshot,
         'mipeque-consultations',
+      ),
+    appointments:
+      getSnapshotCount(
+        snapshot,
+        'mipeque-appointments',
       ),
     treatments:
       getSnapshotCount(
@@ -447,6 +453,7 @@ function createBackupHtml(backup) {
     <div class="grid">
       <article><strong>${Number(summary.children || 0)}</strong><span>Hijos</span></article>
       <article><strong>${Number(summary.consultations || 0)}</strong><span>Consultas</span></article>
+      <article><strong>${Number(summary.appointments || 0)}</strong><span>Turnos</span></article>
       <article><strong>${Number(summary.treatments || 0)}</strong><span>Tratamientos</span></article>
       <article><strong>${Number(summary.reminders || 0)}</strong><span>Acciones de tomas</span></article>
       <article><strong>${Number(summary.vaccines || 0)}</strong><span>Vacunas</span></article>
