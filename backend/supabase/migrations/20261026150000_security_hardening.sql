@@ -1,22 +1,13 @@
 -- =========================================================
--- MiPeque - endurecimiento de permisos y consistencia comercial
+-- MiPeque - endurecimiento de permisos
 -- 2026-10-26
 -- =========================================================
-
--- Conserva cualquier precio personalizado del panel admin.
--- Solo migra los valores iniciales históricos.
-update public.subscription_plans
-set price_ars = 25000,
-    updated_at = now()
-where id = 'monthly'
-  and price_ars = 15000;
-
-update public.subscription_plans
-set price_ars = 150000,
-    updated_at = now()
-where id = 'annual'
-  and price_ars = 100000;
-
+--
+-- Importante:
+-- esta migración NO modifica precios ni promociones.
+-- Los valores comerciales siguen siendo administrables
+-- desde el panel y se guardan en public.subscription_plans.
+--
 -- Los responsables con acceso medication_only necesitan hijos,
 -- tratamientos y recordatorios para administrar tomas, pero no
 -- deben poder leer consultas, vacunas ni documentos médicos.
