@@ -253,9 +253,10 @@ function MedicalDocumentForm({
         <i className="bi bi-info-circle" />
 
         <p>
-          Durante el desarrollo, los archivos se
-          guardan solamente en este navegador.
-          Utilizá PDF o imágenes de hasta 2 MB.
+          Los archivos se guardan de forma privada
+          en MiPeque y solo pueden acceder los
+          responsables autorizados. Utilizá PDF o
+          imágenes de hasta 2 MB.
         </p>
       </div>
 
