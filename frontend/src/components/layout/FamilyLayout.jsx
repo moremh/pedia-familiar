@@ -17,6 +17,7 @@ import FamilySidebar from './FamilySidebar.jsx';
 import {
   getCurrentFamilySubscription,
   getSubscriptionAccessState,
+  refreshCurrentFamilyAccessState,
 } from '../../services/subscriptionService.js';
 
 import {
@@ -41,6 +42,32 @@ function FamilyLayout() {
       setFamilySubscription(
         getCurrentFamilySubscription(),
       );
+    }, []);
+
+  const refreshRemoteAccess =
+    useCallback(async () => {
+      if (
+        typeof navigator !== 'undefined' &&
+        navigator.onLine === false
+      ) {
+        return;
+      }
+
+      try {
+        const updatedFamily =
+          await refreshCurrentFamilyAccessState();
+
+        if (updatedFamily) {
+          setFamilySubscription(
+            updatedFamily,
+          );
+        }
+      } catch (error) {
+        console.error(
+          'No se pudo actualizar el estado de acceso de la familia.',
+          error,
+        );
+      }
     }, []);
 
   const accessState = useMemo(
@@ -81,9 +108,23 @@ function FamilyLayout() {
   }, [sidebarOpen]);
 
   useEffect(() => {
+    function handleFocus() {
+      refreshSubscription();
+      refreshRemoteAccess();
+    }
+
+    function handleOnline() {
+      refreshRemoteAccess();
+    }
+
     window.addEventListener(
       'focus',
-      refreshSubscription,
+      handleFocus,
+    );
+
+    window.addEventListener(
+      'online',
+      handleOnline,
     );
 
     window.addEventListener(
@@ -93,14 +134,19 @@ function FamilyLayout() {
 
     const intervalId =
       window.setInterval(
-        refreshSubscription,
-        30000,
+        refreshRemoteAccess,
+        60000,
       );
 
     return () => {
       window.removeEventListener(
         'focus',
-        refreshSubscription,
+        handleFocus,
+      );
+
+      window.removeEventListener(
+        'online',
+        handleOnline,
       );
 
       window.removeEventListener(
@@ -112,7 +158,10 @@ function FamilyLayout() {
         intervalId,
       );
     };
-  }, [refreshSubscription]);
+  }, [
+    refreshRemoteAccess,
+    refreshSubscription,
+  ]);
 
   if (!accessState.allowed) {
     return (
