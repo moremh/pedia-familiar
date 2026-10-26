@@ -44,6 +44,7 @@ import {
   getPushNotificationState,
   savePushNotificationPreferences,
   sendTestPushNotification,
+  showTestSystemNotification,
 } from '../../services/pushNotificationsService.js';
 
 import '../../styles/settings.css';
@@ -386,6 +387,36 @@ function SettingsPage() {
       );
     } finally {
       setIsUpdatingPush(false);
+    }
+  }
+
+  async function handleTestSystemNotification() {
+    setIsTestingPush(true);
+
+    try {
+      const result =
+        await showTestSystemNotification();
+
+      if (!result?.success) {
+        throw new Error(
+          result?.message ||
+            'No se pudo mostrar la notificación del sistema.',
+        );
+      }
+
+      showMessage(
+        'success',
+        result.message ||
+          'Notificación del sistema mostrada correctamente.',
+      );
+    } catch (error) {
+      showMessage(
+        'error',
+        error.message ||
+          'No se pudo mostrar la notificación del sistema.',
+      );
+    } finally {
+      setIsTestingPush(false);
     }
   }
 
@@ -1041,9 +1072,13 @@ function SettingsPage() {
               <strong>
                 {pushState.loading
                   ? 'Revisando este dispositivo...'
-                  : pushState.subscribed
+                  : pushState.status === 'subscribed'
                     ? 'Notificaciones activadas'
-                    : 'Notificaciones desactivadas'}
+                    : pushState.status === 'subscribing'
+                      ? 'Activando notificaciones...'
+                      : pushState.permission === 'granted'
+                        ? 'Permiso concedido'
+                        : 'Notificaciones desactivadas'}
               </strong>
 
               <p>
@@ -1057,12 +1092,14 @@ function SettingsPage() {
                         ? 'Este navegador no admite notificaciones push.'
                         : !pushState.vapidConfigured
                           ? 'Falta configurar la clave pública VAPID del proyecto.'
-                          : pushState.subscribed
-                            ? 'Este dispositivo recibirá los avisos seleccionados abajo.'
-                            : pushState.browserSubscribed
+                          : pushState.status === 'subscribed'
+                            ? 'Este dispositivo está registrado para recibir avisos aunque MiPeque esté cerrada.'
+                            : pushState.status === 'save-error'
                               ? pushState.remoteRegistrationError ||
-                                'El navegador está preparado, pero falta completar el registro del dispositivo en MiPeque.'
-                              : 'Activá las notificaciones para comenzar a recibir avisos en este dispositivo.'}
+                                'El navegador está suscripto, pero falta completar el registro en MiPeque.'
+                              : pushState.permission === 'granted'
+                                ? 'El permiso ya está concedido. Registrá este dispositivo para recibir avisos con MiPeque cerrada.'
+                                : 'Activá las notificaciones para comenzar a recibir avisos en este dispositivo.'}
               </p>
             </div>
 
@@ -1081,7 +1118,9 @@ function SettingsPage() {
                 <i className="bi bi-bell" />
                 {isUpdatingPush
                   ? 'Activando...'
-                  : 'Activar en este dispositivo'}
+                  : pushState.permission === 'granted'
+                    ? 'Registrar este dispositivo'
+                    : 'Activar notificaciones'}
               </button>
             )}
           </div>
@@ -1267,6 +1306,22 @@ function SettingsPage() {
               </small>
             </span>
           </label>
+
+          {pushState.permission === 'granted' && (
+            <div className="family-settings-push__actions">
+              <button
+                type="button"
+                className="btn btn-outline-primary"
+                onClick={handleTestSystemNotification}
+                disabled={isTestingPush || isUpdatingPush}
+              >
+                <i className="bi bi-bell" />
+                {isTestingPush
+                  ? 'Probando...'
+                  : 'Probar notificación del sistema'}
+              </button>
+            </div>
+          )}
 
           {pushState.subscribed && (
             <div className="family-settings-push__actions">
