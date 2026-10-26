@@ -1,4 +1,9 @@
 import {
+  lazy,
+  Suspense,
+} from 'react';
+
+import {
   Navigate,
   Route,
   Routes,
@@ -20,29 +25,89 @@ import {
   getFamilyHomePath,
 } from '../services/familyAccessService.js';
 
-import LoginPage from '../pages/auth/LoginPage.jsx';
-import RegisterPage from '../pages/auth/RegisterPage.jsx';
-import InvitationPage from '../pages/auth/InvitationPage.jsx';
-import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage.jsx';
-import ResetPasswordPage from '../pages/auth/ResetPasswordPage.jsx';
+const LoginPage = lazy(() =>
+  import('../pages/auth/LoginPage.jsx')
+);
+const RegisterPage = lazy(() =>
+  import('../pages/auth/RegisterPage.jsx')
+);
+const InvitationPage = lazy(() =>
+  import('../pages/auth/InvitationPage.jsx')
+);
+const ForgotPasswordPage = lazy(() =>
+  import('../pages/auth/ForgotPasswordPage.jsx')
+);
+const ResetPasswordPage = lazy(() =>
+  import('../pages/auth/ResetPasswordPage.jsx')
+);
 
-import FamilyDashboardPage from '../pages/family/FamilyDashboardPage.jsx';
-import ChildrenPage from '../pages/family/ChildrenPage.jsx';
-import ConsultationsPage from '../pages/family/ConsultationsPage.jsx';
-import TreatmentsPage from '../pages/family/TreatmentsPage.jsx';
-import RemindersPage from '../pages/family/RemindersPage.jsx';
-import DocumentsPage from '../pages/family/DocumentsPage.jsx';
-import VaccinesPage from '../pages/family/VaccinesPage.jsx';
-import MedicineCabinetPage from '../pages/family/MedicineCabinetPage.jsx';
-import CaregiversPage from '../pages/family/CaregiversPage.jsx';
-import AlertsPage from '../pages/family/AlertsPage.jsx';
-import SettingsPage from '../pages/family/SettingsPage.jsx';
-import MedicationHistoryPage from '../pages/family/MedicationHistoryPage.jsx';
-import HelpPage from '../pages/family/HelpPage.jsx';
-import SubscriptionExpiredPage from '../pages/family/SubscriptionExpiredPage.jsx';
+const FamilyDashboardPage = lazy(() =>
+  import('../pages/family/FamilyDashboardPage.jsx')
+);
+const ChildrenPage = lazy(() =>
+  import('../pages/family/ChildrenPage.jsx')
+);
+const ConsultationsPage = lazy(() =>
+  import('../pages/family/ConsultationsPage.jsx')
+);
+const TreatmentsPage = lazy(() =>
+  import('../pages/family/TreatmentsPage.jsx')
+);
+const RemindersPage = lazy(() =>
+  import('../pages/family/RemindersPage.jsx')
+);
+const DocumentsPage = lazy(() =>
+  import('../pages/family/DocumentsPage.jsx')
+);
+const VaccinesPage = lazy(() =>
+  import('../pages/family/VaccinesPage.jsx')
+);
+const MedicineCabinetPage = lazy(() =>
+  import('../pages/family/MedicineCabinetPage.jsx')
+);
+const CaregiversPage = lazy(() =>
+  import('../pages/family/CaregiversPage.jsx')
+);
+const AlertsPage = lazy(() =>
+  import('../pages/family/AlertsPage.jsx')
+);
+const SettingsPage = lazy(() =>
+  import('../pages/family/SettingsPage.jsx')
+);
+const MedicationHistoryPage = lazy(() =>
+  import('../pages/family/MedicationHistoryPage.jsx')
+);
+const HelpPage = lazy(() =>
+  import('../pages/family/HelpPage.jsx')
+);
+const SubscriptionExpiredPage = lazy(() =>
+  import('../pages/family/SubscriptionExpiredPage.jsx')
+);
 
-import AdminDashboardPage from '../pages/admin/AdminDashboardPage.jsx';
-import NotFoundPage from '../pages/NotFoundPage.jsx';
+const AdminDashboardPage = lazy(() =>
+  import('../pages/admin/AdminDashboardPage.jsx')
+);
+const NotFoundPage = lazy(() =>
+  import('../pages/NotFoundPage.jsx')
+);
+
+function RouteLoading() {
+  return (
+    <div
+      className="d-flex min-vh-100 align-items-center justify-content-center"
+      role="status"
+      aria-live="polite"
+    >
+      <span
+        className="spinner-border text-primary"
+        aria-hidden="true"
+      />
+      <span className="visually-hidden">
+        Cargando sección...
+      </span>
+    </div>
+  );
+}
 
 function HomeRedirect() {
   const session = getCurrentSession();
@@ -85,7 +150,8 @@ function DashboardIndexRedirect() {
 
 function AppRoutes() {
   return (
-    <Routes>
+    <Suspense fallback={<RouteLoading />}>
+      <Routes>
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
@@ -240,7 +306,8 @@ function AppRoutes() {
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 
