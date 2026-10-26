@@ -938,7 +938,7 @@ async function dispatchNotifications(request: Request) {
     throw subscriptionsError
   }
 
-  const enabledSubscriptions =
+  let enabledSubscriptions =
     (subscriptions || []) as PushSubscriptionRow[]
 
   if (enabledSubscriptions.length === 0) {
@@ -950,7 +950,79 @@ async function dispatchNotifications(request: Request) {
     })
   }
 
-  const familyIds = [
+  let familyIds = [
+    ...new Set(
+      enabledSubscriptions.map(
+        (subscription) => subscription.family_id,
+      ),
+    ),
+  ]
+
+  const {
+    data: familyAccessRows,
+    error: familyAccessError,
+  } = await admin
+    .from('families')
+    .select(
+      'id, access_status, trial_ends_at, current_period_end',
+    )
+    .in('id', familyIds)
+
+  if (familyAccessError) {
+    throw familyAccessError
+  }
+
+  const accessCheckTime = Date.now()
+
+  const activeFamilyIds = new Set(
+    (familyAccessRows || [])
+      .filter((family) => {
+        if (
+          family.access_status === 'trial'
+        ) {
+          return (
+            new Date(
+              family.trial_ends_at || 0,
+            ).getTime() >
+            accessCheckTime
+          )
+        }
+
+        if (
+          family.access_status === 'active'
+        ) {
+          return (
+            new Date(
+              family.current_period_end || 0,
+            ).getTime() >
+            accessCheckTime
+          )
+        }
+
+        return false
+      })
+      .map((family) => family.id),
+  )
+
+  enabledSubscriptions =
+    enabledSubscriptions.filter(
+      (subscription) =>
+        activeFamilyIds.has(
+          subscription.family_id,
+        ),
+    )
+
+  if (enabledSubscriptions.length === 0) {
+    return jsonResponse({
+      ok: true,
+      sent: 0,
+      skipped: 0,
+      message:
+        'No hay dispositivos de familias con acceso activo.',
+    })
+  }
+
+  familyIds = [
     ...new Set(
       enabledSubscriptions.map(
         (subscription) => subscription.family_id,
