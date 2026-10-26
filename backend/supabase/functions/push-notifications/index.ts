@@ -421,25 +421,68 @@ function createMedicationCandidates({
     const childName =
       child?.full_name || 'uno de tus hijos'
 
-    const dueSendAt = new Date(
-      scheduledAt.getTime() -
-        advanceMinutes * 60 * 1000,
-    )
+    if (advanceMinutes > 0) {
+      const advanceSendAt = new Date(
+        scheduledAt.getTime() -
+          advanceMinutes * 60 * 1000,
+      )
 
-    if (isInsideDispatchWindow(dueSendAt, now)) {
+      if (
+        isInsideDispatchWindow(
+          advanceSendAt,
+          now,
+        )
+      ) {
+        candidates.push({
+          familyId:
+            treatment.family_id,
+          category:
+            'medication_due',
+          referenceId:
+            reminderId,
+          dedupeKey:
+            `med-advance:${reminderId}:${advanceMinutes}`,
+          sendAt:
+            advanceSendAt,
+          navigateTo:
+            '/dashboard/reminders',
+          privateTitle:
+            'Próxima toma',
+          privateBody:
+            `Tenés una toma dentro de ${advanceMinutes} min en MiPeque.`,
+          detailedTitle:
+            `Próxima toma · ${treatment.medication_name}`,
+          detailedBody:
+            `${childName} · ${treatment.dosage_instruction} · ${localTime}`,
+        })
+      }
+    }
+
+    if (
+      isInsideDispatchWindow(
+        scheduledAt,
+        now,
+      )
+    ) {
       candidates.push({
-        familyId: treatment.family_id,
-        category: 'medication_due',
-        referenceId: reminderId,
-        dedupeKey: `med-due:${reminderId}:${advanceMinutes}`,
-        sendAt: dueSendAt,
-        navigateTo: '/dashboard/reminders',
-        privateTitle: 'Toma programada',
+        familyId:
+          treatment.family_id,
+        category:
+          'medication_due',
+        referenceId:
+          reminderId,
+        dedupeKey:
+          `med-due-now:${reminderId}`,
+        sendAt:
+          scheduledAt,
+        navigateTo:
+          '/dashboard/reminders',
+        privateTitle:
+          'Es hora de una toma',
         privateBody:
-          advanceMinutes > 0
-            ? `Tenés una toma dentro de ${advanceMinutes} min en MiPeque.`
-            : 'Tenés una toma para registrar ahora en MiPeque.',
-        detailedTitle: `Toma de ${treatment.medication_name}`,
+          'Tenés una toma programada para ahora en MiPeque.',
+        detailedTitle:
+          `Es hora · ${treatment.medication_name}`,
         detailedBody:
           `${childName} · ${treatment.dosage_instruction} · ${localTime}`,
       })
