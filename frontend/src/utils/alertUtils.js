@@ -41,6 +41,7 @@ const alertTypeLabels = {
   vaccine: 'Vacuna',
   treatment: 'Tratamiento',
   appointment: 'Turno',
+  followup: 'Seguimiento',
 };
 
 export function getLocalDateKey(
@@ -409,6 +410,111 @@ function createVaccineAlerts({
     .filter(Boolean);
 }
 
+function createFollowUpAlerts({
+  consultations,
+  childrenMap,
+}) {
+  const now = new Date();
+
+  return consultations
+    .filter(
+      (consultation) =>
+        Boolean(
+          consultation.followUpDate,
+        ),
+    )
+    .map((consultation) => {
+      const followUpDate =
+        new Date(
+          `${consultation.followUpDate}T00:00:00`,
+        );
+
+      if (
+        Number.isNaN(
+          followUpDate.getTime(),
+        )
+      ) {
+        return null;
+      }
+
+      const daysUntil =
+        getDifferenceInDays(
+          followUpDate,
+          now,
+        );
+
+      if (
+        daysUntil < -30 ||
+        daysUntil > 30
+      ) {
+        return null;
+      }
+
+      const isToday =
+        daysUntil === 0;
+      const isOverdue =
+        daysUntil < 0;
+
+      const childName =
+        childrenMap[
+          consultation.childId
+        ]?.fullName ||
+        'Perfil no disponible';
+
+      return {
+        id:
+          `followup-${consultation.id}`,
+        sourceId:
+          consultation.id,
+        type: 'followup',
+        priority:
+          isOverdue
+            ? 'urgent'
+            : isToday
+              ? 'high'
+              : 'medium',
+        group:
+          isOverdue
+            ? 'urgent'
+            : isToday
+              ? 'today'
+              : 'upcoming',
+        title:
+          consultation.reason ||
+          'Seguimiento médico',
+        description:
+          childName,
+        childId:
+          consultation.childId,
+        childName,
+        date:
+          followUpDate.toISOString(),
+        dateLabel:
+          new Intl.DateTimeFormat(
+            'es-AR',
+            {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+            },
+          ).format(followUpDate),
+        statusLabel:
+          isOverdue
+            ? 'Seguimiento pendiente'
+            : isToday
+              ? 'Seguimiento para hoy'
+              : 'Próximo seguimiento',
+        icon:
+          'bi-clipboard2-pulse',
+        path:
+          '/dashboard/consultations',
+        actionLabel:
+          'Ver consulta',
+      };
+    })
+    .filter(Boolean);
+}
+
 function createAppointmentAlerts({
   appointments,
   childrenMap,
@@ -587,6 +693,7 @@ export function buildFamilyAlerts({
   vaccines = [],
   cabinetItems = [],
   appointments = [],
+  consultations = [],
 }) {
   const childrenMap = Object.fromEntries(
     children.map((child) => [
@@ -620,6 +727,11 @@ export function buildFamilyAlerts({
 
     ...createAppointmentAlerts({
       appointments,
+      childrenMap,
+    }),
+
+    ...createFollowUpAlerts({
+      consultations,
       childrenMap,
     }),
   ];
