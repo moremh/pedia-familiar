@@ -65,6 +65,15 @@ function normalizePromotion(row) {
 }
 
 
+function normalizeCommercialContact(row = {}) {
+  return {
+    supportWhatsapp: String(
+      row.support_whatsapp || '',
+    ).replace(/\D/g, ''),
+    updatedAt: row.updated_at || '',
+  };
+}
+
 function normalizeChildSettings(row = {}) {
   return {
     baseChildrenLimit: Math.max(
@@ -137,6 +146,7 @@ export async function getAdminCommercialSettings() {
     plansResult,
     promotionsResult,
     childSettingsResult,
+    contactSettingsResult,
   ] = await Promise.all([
     client
       .from('subscription_plans')
@@ -155,6 +165,12 @@ export async function getAdminCommercialSettings() {
 
     client
       .from('child_limit_settings')
+      .select('*')
+      .eq('id', true)
+      .maybeSingle(),
+
+    client
+      .from('commercial_contact_settings')
       .select('*')
       .eq('id', true)
       .maybeSingle(),
@@ -178,6 +194,13 @@ export async function getAdminCommercialSettings() {
     throw normalizeError(
       childSettingsResult.error,
       'No se pudo cargar la configuración de hijos.',
+    );
+  }
+
+  if (contactSettingsResult.error) {
+    throw normalizeError(
+      contactSettingsResult.error,
+      'No se pudo cargar el contacto comercial.',
     );
   }
 
@@ -213,7 +236,82 @@ export async function getAdminCommercialSettings() {
       normalizeChildSettings(
         childSettingsResult.data || {},
       ),
+    contactSettings:
+      normalizeCommercialContact(
+        contactSettingsResult.data || {},
+      ),
   };
+}
+
+export async function getCommercialContactSettings() {
+  const client = requireSupabase();
+
+  const { data, error } =
+    await client
+      .from('commercial_contact_settings')
+      .select('*')
+      .eq('id', true)
+      .maybeSingle();
+
+  if (error) {
+    throw normalizeError(
+      error,
+      'No se pudo cargar el contacto comercial.',
+    );
+  }
+
+  return normalizeCommercialContact(
+    data || {},
+  );
+}
+
+export async function updateCommercialContactSettings({
+  supportWhatsapp,
+}) {
+  const normalizedWhatsapp =
+    String(supportWhatsapp || '')
+      .replace(/\D/g, '');
+
+  if (
+    normalizedWhatsapp &&
+    (
+      normalizedWhatsapp.length < 10 ||
+      normalizedWhatsapp.length > 15
+    )
+  ) {
+    throw new Error(
+      'Ingresá el número completo con código de país y área, sin el signo +.',
+    );
+  }
+
+  const client = requireSupabase();
+
+  const { data, error } =
+    await client
+      .from('commercial_contact_settings')
+      .upsert(
+        {
+          id: true,
+          support_whatsapp:
+            normalizedWhatsapp,
+        },
+        {
+          onConflict: 'id',
+        },
+      )
+      .select('*')
+      .single();
+
+  if (error || !data) {
+    throw normalizeError(
+      error,
+      'No se pudo actualizar el contacto comercial.',
+    );
+  }
+
+  notifyCommercialSettingsChanged();
+
+  return normalizeCommercialContact(data);
 }
 
 export async function updateSubscriptionPlan(
