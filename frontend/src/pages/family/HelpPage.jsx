@@ -77,6 +77,22 @@ const MANUAL_SECTIONS = [
     ],
   },
   {
+    id: 'appointments',
+    icon: 'bi-calendar-event',
+    title: 'Turnos médicos',
+    keywords: 'turno cita medico profesional hora recordar aviso anticipacion',
+    paragraphs: [
+      'Turnos sirve para programar consultas futuras con fecha y hora exactas y elegir cuándo querés recibir el recordatorio.',
+    ],
+    steps: [
+      'Entrá en Turnos y elegí Nuevo turno.',
+      'Seleccioná el hijo, fecha, hora, motivo y, si querés, profesional, especialidad y lugar.',
+      'Activá Recordarme este turno.',
+      'Elegí avisar a la hora, 10, 15 o 30 minutos antes, 1 o 2 horas antes, 1 día antes o una cantidad personalizada.',
+      'El aviso puede aparecer dentro de MiPeque y como notificación del sistema si el dispositivo tiene Web Push activado.',
+    ],
+  },
+  {
     id: 'vaccines',
     icon: 'bi-shield-plus',
     title: 'Vacunas',
@@ -141,7 +157,7 @@ const MANUAL_SECTIONS = [
     title: 'Notificaciones push',
     keywords: 'notificaciones push activar telefono prueba aviso pantalla bloqueo',
     paragraphs: [
-      'Cada dispositivo se activa por separado. MiPeque puede avisar sobre tomas, atrasos, vacunas, vencimientos, stock y seguimientos médicos.',
+      'Cada dispositivo se activa por separado. MiPeque puede avisar sobre tomas, atrasos, turnos, vacunas, vencimientos, stock y seguimientos médicos.',
     ],
     steps: [
       'Entrá en Configuración y buscá Notificaciones push.',

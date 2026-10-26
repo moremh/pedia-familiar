@@ -50,6 +50,9 @@ const ChildrenPage = lazy(() =>
 const ConsultationsPage = lazy(() =>
   import('../pages/family/ConsultationsPage.jsx')
 );
+const AppointmentsPage = lazy(() =>
+  import('../pages/family/AppointmentsPage.jsx')
+);
 const TreatmentsPage = lazy(() =>
   import('../pages/family/TreatmentsPage.jsx')
 );
@@ -237,12 +240,7 @@ function AppRoutes() {
 
             <Route
               path="appointments"
-              element={
-                <Navigate
-                  to="/dashboard/consultations"
-                  replace
-                />
-              }
+              element={<AppointmentsPage />}
             />
 
             <Route

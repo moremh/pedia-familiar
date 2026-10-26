@@ -10,6 +10,7 @@ import {
   deleteCurrentAccount,
 } from '../../services/authService.js';
 import { getConsultations } from '../../services/consultationsService.js';
+import { getAppointments } from '../../services/appointmentsService.js';
 import { getDocuments } from '../../services/documentsService.js';
 import { getTreatments } from '../../services/treatmentsService.js';
 import { getVaccines } from '../../services/vaccinesService.js';
@@ -115,6 +116,8 @@ function SettingsPage() {
     children: getChildren().length,
     consultations:
       getConsultations().length,
+    appointments:
+      getAppointments().length,
     treatments: getTreatments().length,
     reminders:
       getReminderRecords().length,
@@ -1275,9 +1278,9 @@ function SettingsPage() {
               <i className="bi bi-clipboard2-pulse" />
 
               <span>
-                <strong>Seguimientos médicos</strong>
+                <strong>Turnos y seguimientos médicos</strong>
                 <small>
-                  Avisar por fechas de seguimiento registradas en consultas.
+                  Avisar por turnos programados y fechas de seguimiento registradas.
                 </small>
               </span>
             </label>
@@ -1435,6 +1438,13 @@ function SettingsPage() {
               {dataCounts.consultations}
             </strong>
             <span>Consultas</span>
+          </article>
+
+          <article>
+            <strong>
+              {dataCounts.appointments}
+            </strong>
+            <span>Turnos</span>
           </article>
 
           <article>

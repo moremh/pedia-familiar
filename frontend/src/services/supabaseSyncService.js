@@ -14,6 +14,7 @@ const STORAGE_KEYS = {
   activeCaregiver: 'mipeque-active-caregiver',
   children: 'mipeque-children',
   consultations: 'mipeque-consultations',
+  appointments: 'mipeque-appointments',
   treatments: 'mipeque-treatments',
   reminders: 'mipeque-reminder-records',
   vaccines: 'mipeque-vaccines',
@@ -27,6 +28,7 @@ const SYNCABLE_KEYS = new Set([
   STORAGE_KEYS.settings,
   STORAGE_KEYS.children,
   STORAGE_KEYS.consultations,
+  STORAGE_KEYS.appointments,
   STORAGE_KEYS.treatments,
   STORAGE_KEYS.reminders,
   STORAGE_KEYS.vaccines,
@@ -39,6 +41,7 @@ const SYNC_PRIORITY = [
   STORAGE_KEYS.settings,
   STORAGE_KEYS.children,
   STORAGE_KEYS.consultations,
+  STORAGE_KEYS.appointments,
   STORAGE_KEYS.treatments,
   STORAGE_KEYS.reminders,
   STORAGE_KEYS.vaccines,
@@ -349,6 +352,40 @@ function mapConsultationRow(row) {
     temperature: row.temperature === null ? '' : Number(row.temperature),
     indications: row.indications || '',
     followUpDate: row.follow_up_date || '',
+    notes: row.notes || '',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapAppointmentRow(row) {
+  return {
+    id: row.id,
+    childId: row.child_id,
+    appointmentDate:
+      row.appointment_date,
+    appointmentTime:
+      row.appointment_time
+        ? String(
+            row.appointment_time,
+          ).slice(0, 5)
+        : '',
+    reason: row.reason || '',
+    professionalName:
+      row.professional_name || '',
+    specialty:
+      row.specialty || '',
+    medicalCenter:
+      row.medical_center || '',
+    reminderEnabled:
+      row.reminder_enabled !== false,
+    reminderMinutesBefore:
+      Number(
+        row.reminder_minutes_before ??
+          30,
+      ),
+    status:
+      row.status || 'scheduled',
     notes: row.notes || '',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -675,6 +712,7 @@ export async function loadFamilyCache(familyId, user = null) {
     settingsResult,
     childrenResult,
     consultationsResult,
+    appointmentsResult,
     treatmentsResult,
     remindersResult,
     vaccinesResult,
@@ -714,6 +752,10 @@ export async function loadFamilyCache(familyId, user = null) {
       error: null,
     })),
     fetchFamilyRows(client, 'consultations', familyId).then((data) => ({
+      data,
+      error: null,
+    })),
+    fetchFamilyRows(client, 'appointments', familyId).then((data) => ({
       data,
       error: null,
     })),
@@ -774,8 +816,15 @@ export async function loadFamilyCache(familyId, user = null) {
 
   const settings = mapSettingsRow(settingsResult.data, familyResult.data);
   const children = (childrenResult.data || []).map(mapChildRow);
-  const consultations = (consultationsResult.data || []).map(mapConsultationRow);
-  const treatments = (treatmentsResult.data || []).map(mapTreatmentRow);
+  const consultations =
+    (consultationsResult.data || [])
+      .map(mapConsultationRow);
+  const appointments =
+    (appointmentsResult.data || [])
+      .map(mapAppointmentRow);
+  const treatments =
+    (treatmentsResult.data || [])
+      .map(mapTreatmentRow);
   const reminders = (remindersResult.data || []).map(mapReminderRow);
   const vaccines = await Promise.all(
     (vaccinesResult.data || []).map((row) => mapVaccineRow(client, row)),
@@ -795,6 +844,15 @@ export async function loadFamilyCache(familyId, user = null) {
   setHydratedRows(
     STORAGE_KEYS.consultations,
     consultations.map((item) => consultationToRow(item, familyId)),
+  );
+  setHydratedRows(
+    STORAGE_KEYS.appointments,
+    appointments.map((item) =>
+      appointmentToRow(
+        item,
+        familyId,
+      ),
+    ),
   );
   setHydratedRows(
     STORAGE_KEYS.treatments,
@@ -842,6 +900,7 @@ export async function loadFamilyCache(familyId, user = null) {
     );
     writeJson(STORAGE_KEYS.children, children);
     writeJson(STORAGE_KEYS.consultations, consultations);
+    writeJson(STORAGE_KEYS.appointments, appointments);
     writeJson(STORAGE_KEYS.treatments, treatments);
     writeJson(STORAGE_KEYS.reminders, reminders);
     writeJson(STORAGE_KEYS.vaccines, vaccines);
@@ -1344,6 +1403,45 @@ function consultationToRow(consultation, familyId) {
   };
 }
 
+function appointmentToRow(
+  appointment,
+  familyId,
+) {
+  return {
+    id: appointment.id,
+    family_id: familyId,
+    child_id:
+      appointment.childId,
+    appointment_date:
+      appointment.appointmentDate,
+    appointment_time:
+      appointment.appointmentTime,
+    reason:
+      appointment.reason || '',
+    professional_name:
+      appointment.professionalName ||
+      '',
+    specialty:
+      appointment.specialty || '',
+    medical_center:
+      appointment.medicalCenter || '',
+    reminder_enabled:
+      appointment.reminderEnabled !==
+      false,
+    reminder_minutes_before:
+      Number(
+        appointment
+          .reminderMinutesBefore ??
+          30,
+      ),
+    status:
+      appointment.status ||
+      'scheduled',
+    notes:
+      appointment.notes || '',
+  };
+}
+
 function treatmentToRow(treatment, familyId) {
   const isInterval = treatment.frequencyMode !== 'custom';
 
@@ -1753,6 +1851,24 @@ export async function syncStorageKey(storageKey) {
         STORAGE_KEYS.consultations,
         readJson(STORAGE_KEYS.consultations, []).map((item) =>
           consultationToRow(item, familyId),
+        ),
+      );
+      break;
+
+    case STORAGE_KEYS.appointments:
+      await replaceRows(
+        client,
+        'appointments',
+        familyId,
+        STORAGE_KEYS.appointments,
+        readJson(
+          STORAGE_KEYS.appointments,
+          [],
+        ).map((item) =>
+          appointmentToRow(
+            item,
+            familyId,
+          ),
         ),
       );
       break;

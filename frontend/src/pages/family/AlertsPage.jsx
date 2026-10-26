@@ -8,6 +8,7 @@ import FamilyAlertCard from '../../components/cards/FamilyAlertCard.jsx';
 import { getChildren } from '../../services/childrenService.js';
 import { getTreatments } from '../../services/treatmentsService.js';
 import { getVaccines } from '../../services/vaccinesService.js';
+import { getAppointments } from '../../services/appointmentsService.js';
 
 import {
   getReminderRecords,
@@ -42,6 +43,13 @@ function AlertsPage() {
     () => getVaccines(),
   );
 
+  const [
+    appointments,
+    setAppointments,
+  ] = useState(() =>
+    getAppointments(),
+  );
+
   const [cabinetItems, setCabinetItems] =
     useState(() =>
       getMedicineCabinetItems(),
@@ -67,6 +75,7 @@ function AlertsPage() {
         reminderRecords,
         vaccines,
         cabinetItems,
+        appointments,
       }),
     [
       children,
@@ -74,6 +83,7 @@ function AlertsPage() {
       reminderRecords,
       vaccines,
       cabinetItems,
+      appointments,
     ],
   );
 
@@ -158,6 +168,10 @@ function AlertsPage() {
 
     setVaccines(getVaccines());
 
+    setAppointments(
+      getAppointments(),
+    );
+
     setCabinetItems(
       getMedicineCabinetItems(),
     );
@@ -172,8 +186,8 @@ function AlertsPage() {
           <h2>Centro de alertas</h2>
 
           <p>
-            Revisá las tomas pendientes, el stock,
-            los vencimientos y las próximas vacunas.
+            Revisá tomas, turnos, vacunas, stock,
+            vencimientos y otras acciones importantes.
           </p>
         </div>
 
@@ -379,6 +393,10 @@ function AlertsPage() {
           <option value="treatment">
             Tratamientos
           </option>
+
+          <option value="appointment">
+            Turnos
+          </option>
         </select>
       </section>
 
@@ -413,7 +431,7 @@ function AlertsPage() {
 
           <p>
             {alerts.length === 0
-              ? 'Las tomas, el stock, los vencimientos y las vacunas están controlados.'
+              ? 'Las tomas, los turnos, el stock, los vencimientos y las vacunas están controlados.'
               : 'Probá cambiando los filtros o utilizando otro término de búsqueda.'}
           </p>
         </section>

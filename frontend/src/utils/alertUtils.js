@@ -40,6 +40,7 @@ const alertTypeLabels = {
   stock: 'Botiquín',
   vaccine: 'Vacuna',
   treatment: 'Tratamiento',
+  appointment: 'Turno',
 };
 
 export function getLocalDateKey(
@@ -408,6 +409,121 @@ function createVaccineAlerts({
     .filter(Boolean);
 }
 
+function createAppointmentAlerts({
+  appointments,
+  childrenMap,
+}) {
+  const now =
+    new Date();
+
+  return appointments
+    .filter(
+      (appointment) =>
+        appointment.status ===
+        'scheduled',
+    )
+    .map((appointment) => {
+      const appointmentAt =
+        new Date(
+          `${appointment.appointmentDate}T${appointment.appointmentTime}:00`,
+        );
+
+      if (
+        Number.isNaN(
+          appointmentAt.getTime(),
+        )
+      ) {
+        return null;
+      }
+
+      const differenceMs =
+        appointmentAt.getTime() -
+        now.getTime();
+
+      const daysUntil =
+        Math.ceil(
+          differenceMs /
+            86400000,
+        );
+
+      if (
+        differenceMs <
+          -2 * 60 * 60 * 1000 ||
+        daysUntil > 30
+      ) {
+        return null;
+      }
+
+      const isToday =
+        getLocalDateKey(
+          appointmentAt,
+        ) ===
+        getLocalDateKey(now);
+
+      const isPast =
+        differenceMs < 0;
+
+      const childName =
+        childrenMap[
+          appointment.childId
+        ]?.fullName ||
+        'Perfil no disponible';
+
+      return {
+        id:
+          `appointment-${appointment.id}`,
+        sourceId:
+          appointment.id,
+        type: 'appointment',
+        priority:
+          isPast
+            ? 'urgent'
+            : isToday
+              ? 'high'
+              : 'medium',
+        group:
+          isPast
+            ? 'urgent'
+            : isToday
+              ? 'today'
+              : 'upcoming',
+        title:
+          appointment.reason ||
+          appointment.specialty ||
+          'Turno médico',
+        description: [
+          childName,
+          appointment.professionalName,
+          appointment.medicalCenter,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+        childId:
+          appointment.childId,
+        childName,
+        date:
+          appointmentAt.toISOString(),
+        dateLabel:
+          formatAlertDateTime(
+            appointmentAt,
+          ),
+        statusLabel:
+          isPast
+            ? 'Turno pendiente de cerrar'
+            : isToday
+              ? 'Turno para hoy'
+              : 'Próximo turno',
+        icon:
+          'bi-calendar-event',
+        path:
+          '/dashboard/appointments',
+        actionLabel:
+          'Ver turno',
+      };
+    })
+    .filter(Boolean);
+}
+
 function createTreatmentAlerts({
   treatments,
   cabinetItems,
@@ -470,6 +586,7 @@ export function buildFamilyAlerts({
   reminderRecords = [],
   vaccines = [],
   cabinetItems = [],
+  appointments = [],
 }) {
   const childrenMap = Object.fromEntries(
     children.map((child) => [
@@ -498,6 +615,11 @@ export function buildFamilyAlerts({
     ...createTreatmentAlerts({
       treatments,
       cabinetItems,
+      childrenMap,
+    }),
+
+    ...createAppointmentAlerts({
+      appointments,
       childrenMap,
     }),
   ];
