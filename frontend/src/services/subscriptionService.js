@@ -182,6 +182,87 @@ export function clearCurrentFamilyId() {
   );
 }
 
+export async function refreshCurrentFamilyAccessState() {
+  const familyId =
+    getCurrentFamilyId();
+
+  if (!familyId) {
+    return null;
+  }
+
+  const client = requireSupabase();
+
+  const {
+    data,
+    error,
+  } = await client
+    .from('families')
+    .select(
+      'id, family_name, access_status, current_plan, requested_plan, trial_started_at, trial_ends_at, current_period_start, current_period_end, children_count, members_count, children_limit_override',
+    )
+    .eq('id', familyId)
+    .single();
+
+  if (error || !data) {
+    if (
+      typeof navigator !== 'undefined' &&
+      navigator.onLine === false
+    ) {
+      return getCurrentFamilySubscription();
+    }
+
+    throw new Error(
+      error?.message ||
+        'No se pudo actualizar el estado de la suscripción.',
+    );
+  }
+
+  const current =
+    getCurrentFamilySubscription() || {
+      id: familyId,
+    };
+
+  const updated = {
+    ...current,
+    id: data.id,
+    familyName:
+      data.family_name ||
+      current.familyName ||
+      '',
+    status:
+      data.access_status ||
+      current.status ||
+      'expired',
+    plan:
+      data.current_plan ||
+      current.plan ||
+      'none',
+    requestedPlan:
+      data.requested_plan || '',
+    trialStartedAt:
+      data.trial_started_at || null,
+    trialEndsAt:
+      data.trial_ends_at || null,
+    subscriptionStartedAt:
+      data.current_period_start || null,
+    subscriptionEndsAt:
+      data.current_period_end || null,
+    childrenCount:
+      Number(data.children_count || 0),
+    membersCount:
+      Number(data.members_count || 0),
+    childrenLimitOverride:
+      data.children_limit_override ?? null,
+  };
+
+  localStorage.setItem(
+    'mipeque-admin-families',
+    JSON.stringify([updated]),
+  );
+
+  return updated;
+}
+
 export function getCurrentFamilySubscription() {
   const familyId =
     getCurrentFamilyId();
