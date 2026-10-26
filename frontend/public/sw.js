@@ -169,11 +169,45 @@ self.addEventListener('push', (event) => {
     },
   };
 
+  const inAppPayload = {
+    id:
+      payload.dedupeKey ||
+      payload.tag ||
+      `push-${Date.now()}`,
+    title,
+    body,
+    url,
+    category:
+      payload.category || '',
+    referenceId:
+      payload.referenceId || '',
+  };
+
+  const notifyOpenClients =
+    self.clients
+      .matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      })
+      .then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({
+            type:
+              'MIPEQUE_PUSH_NOTIFICATION',
+            payload:
+              inAppPayload,
+          });
+        });
+      });
+
   event.waitUntil(
-    self.registration.showNotification(
-      title,
-      options,
-    ),
+    Promise.all([
+      self.registration.showNotification(
+        title,
+        options,
+      ),
+      notifyOpenClients,
+    ]),
   );
 });
 
