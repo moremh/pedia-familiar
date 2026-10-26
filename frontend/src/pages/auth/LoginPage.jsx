@@ -231,6 +231,15 @@ function LoginPage() {
             />
           </div>
 
+          <div className="text-end mb-2">
+            <Link
+              to="/forgot-password"
+              className="small text-decoration-none"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
+
           <button
             type="submit"
             className="btn btn-primary w-100"
