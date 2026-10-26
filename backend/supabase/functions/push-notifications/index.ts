@@ -127,6 +127,21 @@ type ConsultationRow = {
   follow_up_date: string | null
 }
 
+type AppointmentRow = {
+  id: string
+  family_id: string
+  child_id: string
+  appointment_date: string
+  appointment_time: string
+  reason: string
+  professional_name: string
+  specialty: string
+  medical_center: string
+  reminder_enabled: boolean
+  reminder_minutes_before: number
+  status: string
+}
+
 type DeliveryRow = {
   subscription_id: string
   dedupe_key: string
@@ -140,6 +155,7 @@ type CandidateCategory =
   | 'expiration'
   | 'stock_low'
   | 'followup'
+  | 'appointment'
 
 type Candidate = {
   familyId: string
@@ -706,6 +722,7 @@ function subscriptionAllowsCandidate(
       return subscription.notify_stock
 
     case 'followup':
+    case 'appointment':
       return subscription.notify_followups
 
     default:
@@ -1047,6 +1064,7 @@ async function dispatchNotifications(request: Request) {
     vaccinesResult,
     cabinetResult,
     consultationsResult,
+    appointmentsResult,
     deliveriesResult,
   ] = await Promise.all([
     admin
@@ -1115,6 +1133,15 @@ async function dispatchNotifications(request: Request) {
       .not('follow_up_date', 'is', null),
 
     admin
+      .from('appointments')
+      .select(
+        'id, family_id, child_id, appointment_date, appointment_time, reason, professional_name, specialty, medical_center, reminder_enabled, reminder_minutes_before, status',
+      )
+      .in('family_id', familyIds)
+      .eq('status', 'scheduled')
+      .eq('reminder_enabled', true),
+
+    admin
       .from('push_notification_deliveries')
       .select('subscription_id, dedupe_key')
       .in(
@@ -1134,6 +1161,7 @@ async function dispatchNotifications(request: Request) {
     vaccinesResult.error,
     cabinetResult.error,
     consultationsResult.error,
+    appointmentsResult.error,
     deliveriesResult.error,
   ].filter(Boolean)
 
@@ -1461,6 +1489,105 @@ async function dispatchNotifications(request: Request) {
           consultation.reason || 'Consulta médica',
       })
     }
+  }
+
+  for (const appointment of
+    (appointmentsResult.data || []) as AppointmentRow[]) {
+    if (
+      appointment.status !== 'scheduled' ||
+      !appointment.reminder_enabled
+    ) {
+      continue
+    }
+
+    const timezone =
+      familyTimezone.get(appointment.family_id) ||
+      DEFAULT_TIMEZONE
+
+    const appointmentAt =
+      zonedDateTimeToUtc(
+        appointment.appointment_date,
+        appointment.appointment_time,
+        timezone,
+      )
+
+    if (!appointmentAt) {
+      continue
+    }
+
+    const reminderMinutes =
+      Math.max(
+        0,
+        Math.min(
+          10080,
+          Number(
+            appointment.reminder_minutes_before ||
+              0,
+          ),
+        ),
+      )
+
+    const sendAt =
+      new Date(
+        appointmentAt.getTime() -
+          reminderMinutes *
+            60 *
+            1000,
+      )
+
+    if (
+      !isInsideDispatchWindow(
+        sendAt,
+        now,
+      )
+    ) {
+      continue
+    }
+
+    const childName =
+      childrenById.get(
+        appointment.child_id,
+      )?.full_name ||
+      'uno de tus hijos'
+
+    const localTime =
+      formatLocalTime(
+        appointmentAt,
+        timezone,
+      )
+
+    const place =
+      appointment.medical_center
+        ? ` · ${appointment.medical_center}`
+        : ''
+
+    const professional =
+      appointment.professional_name
+        ? ` con ${appointment.professional_name}`
+        : ''
+
+    candidates.push({
+      familyId:
+        appointment.family_id,
+      category: 'appointment',
+      referenceId:
+        appointment.id,
+      dedupeKey:
+        `appointment-warning:${appointment.id}:${appointment.appointment_date}:${localTime}:${reminderMinutes}`,
+      sendAt,
+      navigateTo:
+        '/dashboard/appointments',
+      privateTitle:
+        'Recordatorio de turno',
+      privateBody:
+        reminderMinutes > 0
+          ? 'Tenés un turno médico próximo registrado en MiPeque.'
+          : 'Llegó la hora de un turno médico registrado en MiPeque.',
+      detailedTitle:
+        `Turno de ${childName}`,
+      detailedBody:
+        `${appointment.reason || appointment.specialty || 'Turno médico'}${professional} · ${localTime}${place}`,
+    })
   }
 
   const existingDeliveries = new Set(
