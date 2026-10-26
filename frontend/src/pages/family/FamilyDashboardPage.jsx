@@ -118,6 +118,13 @@ const quickActions = [
     path: '/dashboard/consultations',
   },
   {
+    title: 'Programar turno',
+    description:
+      'Agendar una consulta futura con recordatorio.',
+    icon: 'bi-calendar-event',
+    path: '/dashboard/appointments',
+  },
+  {
     title: 'Responsables',
     description:
       'Gestionar cuidadores familiares.',
@@ -709,7 +716,7 @@ function FamilyDashboardPage() {
           </h2>
 
           <p>
-            Revisá los medicamentos,
+            Revisá medicamentos, turnos,
             tratamientos y recordatorios
             de tus hijos desde un solo
             lugar.
